@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* In your global CSS */
+.slick-dots li button:before {
+    color: #4FD1C5;
+  }
+  
+  .slick-dots li.slick-active button:before {
+    color: #4299E1;
+  }

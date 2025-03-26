@@ -1,0 +1,33 @@
+binarybet/
+├── backend/
+│   ├── package.json
+│   ├── .env
+│   ├── prisma/
+│   │   └── schema.prisma
+│   ├── src/
+│   │   ├── index.js
+│   │   ├── routes/
+│   │   │   ├── auth.js
+│   │   │   └── matches.js
+│   │   └── controllers/
+│   │       ├── authController.js
+│   │       └── matchController.js
+├── frontend/
+│   ├── package.json
+│   ├── next.config.js
+│   ├── .env.local
+│   ├── pages/
+│   │   ├── _app.js
+│   │   ├── index.js          // Landing/Home page
+│   │   ├── betting.js          // Landing/betting page
+│   │   └── dashboard.js      // Dashboard for matches, betting, stats
+│   ├── components/
+│   │   ├── Layout.js         // Common layout wrapper
+│   │   ├── Navbar.js         // Navigation bar with wallet connection
+│   │   └── BettingForm.js    // Betting UI form
+│   ├── lib/
+│   │   └── solana.js         // Solana/Phantom wallet integration functions
+│   └── styles/
+│       └── globals.css       // Global CSS including Tailwind imports
+└── README.md
+

@@ -1,0 +1,30 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  // Add other user fields as needed
+}
+
+model Match {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  // Additional fields for match details
+}
+
+model Bet {
+  id      Int    @id @default(autoincrement())
+  userId  Int
+  matchId Int
+  bet     String // "even" or "odd"
+  // Define relations if needed
+}
