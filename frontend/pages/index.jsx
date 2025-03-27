@@ -1,4 +1,3 @@
-// frontend/pages/index.js
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
@@ -9,6 +8,8 @@ import {
   FiChevronRight, FiHelpCircle, FiAlertTriangle, FiList
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
+import { WalletNotSelectedError } from '@solana/wallet-adapter-base';
+
 
 const Home = () => {
   const { connected, connect } = useWallet();
@@ -39,8 +40,8 @@ const Home = () => {
   // Rules list
   const rules = [
     "Must be 18+ to participate",
-    "Minimum bet: 0.1 SOL",
-    "Maximum bet: 100 SOL",
+    "Minimum bet: 0.000001 SOL",
+    "Maximum bet: 1 SOL",
     "Bets are final once confirmed",
     "Results determined by verifiable RNG",
     "Winnings paid instantly after match"
@@ -69,30 +70,12 @@ const Home = () => {
             transition={{ duration: 0.8 }}
           >
             <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-8">
-              Decentralized <br/>Sports Betting
+              Decentralized <br />Sports Betting
             </h1>
             <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
               Experience provably fair predictions with instant settlements. Powered by Solana blockchain technology.
             </p>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-10 py-4 bg-gradient-to-r from-teal-500 to-blue-600 rounded-xl font-semibold text-lg flex items-center space-x-3 mx-auto hover:shadow-xl hover:shadow-teal-500/20 transition-all"
-              onClick={() => connected ? null : connect()}
-            >
-              {connected ? (
-                <>
-                  <div className="w-3 h-3 bg-green-400 rounded-full" />
-                  <span>Wallet Connected</span>
-                </>
-              ) : (
-                <>
-                  <span>Start Predicting</span>
-                  <FiChevronRight className="text-xl" />
-                </>
-              )}
-            </motion.button>
           </motion.div>
 
           {/* Stats Grid */}
@@ -134,7 +117,7 @@ const Home = () => {
       {/* How It Works Section */}
       <section className="py-24 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             className="text-center mb-20"
@@ -149,26 +132,26 @@ const Home = () => {
 
           <div className="grid md:grid-cols-4 gap-8">
             {[
-              { 
-                icon: FiUsers, 
+              {
+                icon: FiUsers,
                 title: "1. Connect Wallet",
                 desc: "Secure integration with Phantom Wallet",
                 color: "from-purple-500 to-pink-500"
               },
-              { 
-                icon: FiTrendingUp, 
+              {
+                icon: FiTrendingUp,
                 title: "2. Choose Match",
                 desc: "Select from live or upcoming games",
                 color: "from-cyan-500 to-blue-500"
               },
-              { 
-                icon: FiDollarSign, 
+              {
+                icon: FiDollarSign,
                 title: "3. Place Bet",
                 desc: "Predict even/odd with real-time odds",
                 color: "from-green-500 to-cyan-500"
               },
-              { 
-                icon: FiCheck, 
+              {
+                icon: FiCheck,
                 title: "4. Get Paid",
                 desc: "Instant SOL payouts after match ends",
                 color: "from-orange-500 to-red-500"
@@ -197,7 +180,7 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12">
             {/* How to Bet */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               className="bg-gray-800/30 backdrop-blur-sm p-8 rounded-2xl border border-cyan-500/20"
@@ -224,7 +207,7 @@ const Home = () => {
             </motion.div>
 
             {/* Rules */}
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
               className="bg-gray-800/30 backdrop-blur-sm p-8 rounded-2xl border border-cyan-500/20"
@@ -251,7 +234,7 @@ const Home = () => {
       {/* FAQ Section */}
       <section className="py-24 bg-gray-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             className="bg-gray-800/30 backdrop-blur-sm p-8 rounded-2xl border border-cyan-500/20"
@@ -264,7 +247,7 @@ const Home = () => {
             </div>
             <div className="space-y-4">
               {faqItems.map((item, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="border-b border-gray-700/50 last:border-0"
                 >
@@ -277,9 +260,9 @@ const Home = () => {
                   </button>
                   <motion.div
                     initial={{ opacity: 0 }}
-                    animate={{ 
+                    animate={{
                       opacity: openFaq === idx ? 1 : 0,
-                      height: openFaq === idx ? 'auto' : 0 
+                      height: openFaq === idx ? 'auto' : 0
                     }}
                     className="overflow-hidden"
                   >

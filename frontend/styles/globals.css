@@ -4,9 +4,25 @@
 
 /* In your global CSS */
 .slick-dots li button:before {
-    color: #4FD1C5;
-  }
-  
-  .slick-dots li.slick-active button:before {
-    color: #4299E1;
-  }
+  color: #4FD1C5;
+}
+
+.slick-dots li.slick-active button:before {
+  color: #4299E1;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+option{
+  background: rgb(31 41 55 / 0.5);
+}

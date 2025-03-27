@@ -1,5 +1,6 @@
 import React from 'react'
 import { motion, useInView, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 const Footer = () => {
   return (
@@ -17,9 +18,9 @@ const Footer = () => {
               <ul className="space-y-2">
                 {['Home', 'Dashboard', 'Matches', 'Leaderboard'].map((item, idx) => (
                   <li key={idx}>
-                    <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
+                    <Link href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
                       {item}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -29,9 +30,9 @@ const Footer = () => {
               <ul className="space-y-2">
                 {['Terms', 'Privacy', 'Responsibility', 'FAQ'].map((item, idx) => (
                   <li key={idx}>
-                    <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
+                    <Link href="#" className="text-gray-400 hover:text-cyan-400 transition-colors">
                       {item}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>

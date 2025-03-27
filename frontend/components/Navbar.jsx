@@ -1,16 +1,30 @@
 // frontend/components/Navbar.js
 import Link from 'next/link';
 import { useState } from 'react';
-import { connectPhantomWallet } from '../lib/solana';
 import { motion } from 'framer-motion';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [walletConnected, setWalletConnected] = useState(false);
+  const { connected, disconnect, publicKey, wallet } = useWallet();
+  const { setVisible: setModalVisible } = useWalletModal();
 
   const handleConnect = async () => {
-    await connectPhantomWallet();
-    setWalletConnected(true);
+    if (!connected) {
+      if (!wallet) {
+        setModalVisible(true);
+      } else {
+        await connect();
+      }
+    } else {
+      await disconnect();
+    }
+  };
+
+  const formatPublicKey = (key) => {
+    if (!key) return '';
+    return `${key.toString().slice(0, 5)}...${key.toString().slice(-5)}`;
   };
 
   return (
@@ -18,27 +32,26 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <Link href="/" className="flex items-center space-x-2">
-            <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              BinaryBet
-            </span>
+              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                BinaryBet
+              </span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
-            <Link 
-              href="/dashboard" 
-              className="text-gray-300 hover:text-cyan-400 transition-all duration-300"
-            >
-              Dashboard
+            <Link href="/dashboard" className="text-gray-300 hover:text-cyan-400 transition-all duration-300">
+                Dashboard
             </Link>
             <Link href="/betting" className="text-gray-300 hover:text-cyan-400 transition-all duration-300">
-            Start Betting
-          </Link>
+                Start Betting
+            </Link>
             <button
               onClick={handleConnect}
               className="relative px-6 py-2 bg-cyan-600/30 rounded-lg group overflow-hidden"
             >
               <span className="relative z-10 text-cyan-400 group-hover:text-white transition-colors">
-                {walletConnected ? '••••••••' : 'Connect Wallet'}
+                {connected && publicKey
+                  ? `${formatPublicKey(publicKey)}`
+                  : 'Connect Wallet'}
               </span>
               <div className="absolute inset-0 bg-cyan-500/10 w-0 group-hover:w-full transition-all duration-300" />
             </button>
@@ -67,17 +80,17 @@ export default function Navbar() {
           animate={{ opacity: 1, y: 0 }}
           className="md:hidden px-4 pt-2 pb-3 space-y-2"
         >
-          <Link href="/dashboard" className="block text-gray-300 hover:text-cyan-400 px-3 py-2">
-            Dashboard
+          <Link href="/dashboard" className="block text-gray-300 hover:text-cyan-400 px-3 py-2">Dashboard
           </Link>
-          <Link href="/betting" className="block text-gray-300 hover:text-cyan-400 px-3 py-2">
-            Start Betting
+          <Link href="/betting" className="block text-gray-300 hover:text-cyan-400 px-3 py-2">Start Betting
           </Link>
           <button
             onClick={handleConnect}
-            className="w-full text-left px-3 py-2 text-cyan-400 hover:text-white"
+            className="w-full text-left px-3 py-2 text-c yan-400 hover:text-white"
           >
-            Connect Wallet
+            {connected && publicKey
+              ? formatPublicKey(publicKey)
+              : 'Connect Wallet'}
           </button>
         </motion.div>
       )}

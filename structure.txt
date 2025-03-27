@@ -17,17 +17,27 @@ binarybet/
 │   ├── next.config.js
 │   ├── .env.local
 │   ├── pages/
-│   │   ├── _app.js
-│   │   ├── index.js          // Landing/Home page
-│   │   ├── betting.js          // Landing/betting page
-│   │   └── dashboard.js      // Dashboard for matches, betting, stats
+│   │   ├── _app.js          // Application wrapper & providers
+│   │   ├── index.js         // Landing/Home page
+│   │   ├── betting.js       // Betting page (interface for placing bets)
+│   │   └── dashboard.js     // Dashboard for matches, betting stats, and withdrawals
 │   ├── components/
-│   │   ├── Layout.js         // Common layout wrapper
-│   │   ├── Navbar.js         // Navigation bar with wallet connection
-│   │   └── BettingForm.js    // Betting UI form
+│   │   ├── Layout.js        // Common layout wrapper (includes Navbar and Footer)
+│   │   ├── Navbar.js        // Navigation bar with wallet connection
+│   │   └── BettingForm.js   // Reusable betting UI form (if needed)
 │   ├── lib/
-│   │   └── solana.js         // Solana/Phantom wallet integration functions
+│   │   ├── solana.js        // Solana/Phantom wallet integration functions
+│   │   └── anchor.js        // (Optional) Anchor client integration file for smart contract calls
 │   └── styles/
-│       └── globals.css       // Global CSS including Tailwind imports
+│       └── globals.css      // Global CSS including Tailwind imports
+├── programs/
+│   └── binarybet_program/   // Your Anchor program folder
+│       ├── Anchor.toml      // Anchor configuration for your program
+│       ├── Cargo.toml       // Rust project file
+│       ├── programs/
+│       │   └── binarybet_program/
+│       │       └── src/
+│       │           └── lib.rs   // Smart contract (program) source code
+│       ├── tests/           // Integration tests for the smart contract
+│       └── target/          // Build output (generated during build)
 └── README.md
-

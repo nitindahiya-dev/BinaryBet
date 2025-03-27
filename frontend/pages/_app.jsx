@@ -1,5 +1,6 @@
 // frontend/pages/_app.js
 import '../styles/globals.css';
+import '@solana/wallet-adapter-react-ui/styles.css';
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
 import { ThemeProvider } from 'next-themes';
@@ -9,11 +10,8 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 import { clusterApiUrl } from '@solana/web3.js';
 
 function MyApp({ Component, pageProps }) {
-  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl('mainnet-beta');
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter()
-  ];
+  const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl('devnet');
+  const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
 
   return (
     <ThemeProvider attribute="class" defaultTheme="dark">
@@ -21,7 +19,7 @@ function MyApp({ Component, pageProps }) {
         <WalletProvider wallets={wallets} autoConnect>
           <WalletModalProvider>
             <Component {...pageProps} />
-          </WalletModalProvider>
+ </WalletModalProvider>
         </WalletProvider>
       </ConnectionProvider>
     </ThemeProvider>
@@ -29,3 +27,4 @@ function MyApp({ Component, pageProps }) {
 }
 
 export default MyApp;
+
