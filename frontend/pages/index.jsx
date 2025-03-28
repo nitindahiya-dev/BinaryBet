@@ -92,7 +92,7 @@ const Home = () => {
                 className="p-6 bg-gray-800/30 backdrop-blur-sm rounded-xl border border-gray-700/50 hover:border-teal-400/30 transition-colors"
               >
                 <item.icon className="w-12 h-12 text-teal-400 mx-auto mb-4 p-3 bg-gray-700/30 rounded-lg" />
-                <div className="text-4xl font-bold text-teal-400 mb-2">
+                <div className="text-xl sm:text-4xl font-bold text-teal-400 mb-2">
                   {item.value.toLocaleString()}+
                 </div>
                 <div className="text-gray-400 text-sm uppercase tracking-wider">{item.label}</div>

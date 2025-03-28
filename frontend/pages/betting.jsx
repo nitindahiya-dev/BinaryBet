@@ -68,28 +68,65 @@ const Betting = () => {
         <div className="max-w-md w-full">
           {/* Main Interface */}
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-cyan-500/20">
-            <h1 className="text-3xl font-bold text-center mb-6 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              SOL Predictor
-            </h1>
+          <div className="mb-8 text-center">
+  <div className="relative inline-block">
+    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-500 bg-clip-text text-transparent animate-gradient">
+      <span className="inline-block align-middle mr-3">🎮</span>
+      SOL Predictor
+      <span className="inline-block align-middle ml-3">🎲</span>
+    </h1>
+    <div className="absolute inset-x-0 -bottom-2 mx-auto h-px w-3/4 bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0" />
+  </div>
 
-            {/* Match Selection */}
-            <div className="mb-6">
-              <select
-                value={selectedMatch?.id || ''}
-                onChange={(e) =>
-                  setSelectedMatch(mockMatches.find(m => m.id === parseInt(e.target.value)))
-                }
-                className="w-full p-3 bg-gray-700/30 rounded-lg border border-cyan-500/30 text-gray-300"
-              >
-                <option value="">Select Live/Upcoming Match</option>
-                {mockMatches.map(match => (
-                  <option key={match.id} value={match.id}>
-                    {match.status.charAt(0).toUpperCase() + match.status.slice(1)} Match -{' '}
-                    {new Date(match.startTime).toLocaleTimeString()}
-                  </option>
-                ))}
-              </select>
-            </div>
+  {/* Match Selection */}
+  <div className="relative group mt-8">
+    <label className="block text-sm font-medium text-cyan-300 mb-2 text-left">
+      Select Match Event
+      <span className="ml-2 text-xs text-gray-400">(Live updates every 30s)</span>
+    </label>
+    
+    <div className="relative rounded-lg transition-all duration-300 group-hover:border-cyan-400/50">
+      <select
+        value={selectedMatch?.id || ''}
+        onChange={(e) => setSelectedMatch(mockMatches.find(m => m.id === parseInt(e.target.value)))}
+        className="w-full pl-4 pr-10 py-3.5 bg-gray-800/60 backdrop-blur-sm rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 text-gray-200 appearance-none transition-all"
+      >
+        <option value="" className="text-gray-400">Choose a match to predict...</option>
+        {mockMatches.map(match => (
+          <option
+            key={match.id}
+            value={match.id}
+            className={`flex items-center ${match.status === 'live' ? 'text-green-400' : 'text-purple-300'}`}
+          >
+            <span className="inline-block w-2 h-2 mr-2 rounded-full bg-current animate-pulse"></span>
+            {match.status.toUpperCase()} MATCH •{' '}
+            {new Date(match.startTime).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZoneName: 'short'
+            })}
+          </option>
+        ))}
+      </select>
+      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+        <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+    </div>
+
+    {/* Live Status Indicator */}
+    {selectedMatch?.status === 'live' && (
+      <div className="absolute right-4 top-[52px] flex items-center">
+        <span className="relative flex h-3 w-3">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+        </span>
+        <span className="ml-2 text-sm text-green-400 font-medium">LIVE NOW</span>
+      </div>
+    )}
+  </div>
+</div>
 
             {/* Prediction Interface */}
             {selectedMatch && (

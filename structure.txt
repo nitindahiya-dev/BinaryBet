@@ -1,43 +1,41 @@
 binarybet/
-├── backend/
-│   ├── package.json
-│   ├── .env
-│   ├── prisma/
-│   │   └── schema.prisma
+├── backend/                      # REST API server & business logic
+│   ├── package.json              # Node.js dependencies for backend server
+│   ├── .env                   	# Environment variables (e.g., DB credentials)
+│   ├── prisma/                   # Prisma ORM files (if you use a database)
+│   │   └── schema.prisma         # Database schema file
 │   ├── src/
-│   │   ├── index.js
+│   │   ├── index.js              # Entry point for the backend server
 │   │   ├── routes/
-│   │   │   ├── auth.js
-│   │   │   └── matches.js
+│   │   │   ├── auth.js           # API routes for authentication
+│   │   │   └── matches.js        # API routes for matches and bets
 │   │   └── controllers/
-│   │       ├── authController.js
-│   │       └── matchController.js
-├── frontend/
-│   ├── package.json
-│   ├── next.config.js
-│   ├── .env.local
+│   │       ├── authController.js # Logic for handling authentication
+│   │       └── matchController.js# Logic for handling match & bet processing
+│   └── README.md                 # Backend-specific documentation
+├── binarybet/                     # Solana smart contract (Anchor project)                
+│       ├── Cargo.toml            # Rust project configuration for the smart contract
+│       ├── Anchor.toml 
+        ├── programs/                     # Solana smart contract (Anchor project)
+│           └── binarybet/           # Anchor configuration file (set up for upgradeability)
+│               └── src/
+│               └── lib.rs            # Main smart contract code (contains betting logic)
+├── frontend/                     # Next.js frontend project
+│   ├── package.json              # Node.js dependencies for frontend
+│   ├── next.config.js            # Next.js configuration
+│   ├── .env.local             	# Environment variables for the frontend (API endpoints, keys, etc.)
 │   ├── pages/
-│   │   ├── _app.js          // Application wrapper & providers
-│   │   ├── index.js         // Landing/Home page
-│   │   ├── betting.js       // Betting page (interface for placing bets)
-│   │   └── dashboard.js     // Dashboard for matches, betting stats, and withdrawals
-│   ├── components/
-│   │   ├── Layout.js        // Common layout wrapper (includes Navbar and Footer)
-│   │   ├── Navbar.js        // Navigation bar with wallet connection
-│   │   └── BettingForm.js   // Reusable betting UI form (if needed)
-│   ├── lib/
-│   │   ├── solana.js        // Solana/Phantom wallet integration functions
-│   │   └── anchor.js        // (Optional) Anchor client integration file for smart contract calls
+│   │   ├── _app.js               # Application wrapper (global providers, layout)
+│   │   ├── index.js              # Landing/Home page
+│   │   ├── betting.js            # Betting interface for placing bets
+│   │   └── dashboard.js          # Dashboard to view matches, stats, and withdrawal info
+│   ├── components/               # Reusable UI components
+│   │   ├── Layout.js             # Common layout wrapper (includes Navbar and Footer)
+│   │   ├── Navbar.js             # Navigation bar (includes wallet connection)
+│   │   └── BettingForm.js        # Form component for placing bets
+│   ├── lib/                      # Library files for external integrations
+│   │   ├── solana.js             # Functions for wallet connection & Solana contract interaction
+│   │   └── anchor.js             # (Optional) Additional Anchor integration functions
 │   └── styles/
-│       └── globals.css      // Global CSS including Tailwind imports
-├── programs/
-│   └── binarybet_program/   // Your Anchor program folder
-│       ├── Anchor.toml      // Anchor configuration for your program
-│       ├── Cargo.toml       // Rust project file
-│       ├── programs/
-│       │   └── binarybet_program/
-│       │       └── src/
-│       │           └── lib.rs   // Smart contract (program) source code
-│       ├── tests/           // Integration tests for the smart contract
-│       └── target/          // Build output (generated during build)
-└── README.md
+│       └── globals.css           # Global CSS (Tailwind CSS or your own styles)
+└── README.md                     # Overall project documentation

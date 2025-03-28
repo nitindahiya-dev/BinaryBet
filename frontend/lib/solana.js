@@ -1,26 +1,41 @@
-// frontend/lib/solana.js
-import { Connection } from '@solana/web3.js';
+import { Connection, PublicKey, clusterApiUrl, Transaction } from '@solana/web3.js';
+import { AnchorProvider, Program, web3 } from '@project-serum/anchor';
+import idl from './idl.json'; // Import the IDL (Interface Definition Language) file for the contract
 
-const network = 'https://api.devnet.solana.com';
-export const connection = new Connection(network);
+const { SystemProgram } = web3;
+const programID = new PublicKey("BHEAFrDV85GnGzuJDqR7xEujEptbAwxHZuPT76QDqtTk");
 
-export async function connectPhantomWallet() {
-  if (window.solana && window.solana.isPhantom) {
-    try {
-      const response = await window.solana.connect();
-      console.log('Connected with Public Key:', response.publicKey.toString());
-      return response.publicKey.toString();
-    } catch (err) {
-      console.error('Phantom connection error:', err);
-    }
-  } else {
-    alert('Phantom Wallet not found. Please install it from https://phantom.app/');
+export const connectWallet = async () => {
+  try {
+    const provider = window.solana;
+    if (!provider) throw new Error("No wallet found");
+    await provider.connect();
+    return provider.publicKey.toString();
+  } catch (err) {
+    console.error("Error connecting to wallet:", err);
   }
-}
+};
 
-export async function getWalletAddress() {
-  if (window.solana && window.solana.isPhantom) {
-    return window.solana.publicKey ? window.solana.publicKey.toString() : '';
+export const placeBet = async (betAmount, isEven) => {
+  const provider = window.solana;
+  const connection = new Connection(clusterApiUrl('devnet'));
+  
+  const wallet = window.solana;
+  const program = new Program(idl, programID, new AnchorProvider(connection, wallet, {}));
+
+  try {
+    const betTransaction = await program.rpc.placeBet({
+      accounts: {
+        userAccount: wallet.publicKey,
+        systemProgram: SystemProgram.programId,
+      },
+      args: [
+        { amount: betAmount, prediction_is_even: isEven }
+      ]
+    });
+
+    console.log("Transaction successful:", betTransaction);
+  } catch (err) {
+    console.error("Error placing bet:", err);
   }
-  return '';
-}
+};
