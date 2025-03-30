@@ -1,10 +1,8 @@
-// backend/src/routes/auth.js
+// backend/src/routes/user.js
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const userController = require('../controllers/userController');
 
-// Define endpoints for signup and login
-router.post('/signup', authController.signup);
-router.post('/login', authController.login);
+router.post('/', userController.upsertUser);
 
 module.exports = router;

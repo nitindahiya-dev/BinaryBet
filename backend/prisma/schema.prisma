@@ -8,23 +8,38 @@ generator client {
 }
 
 model User {
-  id       Int      @id @default(autoincrement())
-  email    String   @unique
-  password String
-  // Add other user fields as needed
+  id        Int      @id @default(autoincrement())
+  wallet    String   @unique
+  username  String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  bets      Bet[]
 }
 
 model Match {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  // Additional fields for match details
+  startTime   DateTime    // When the match is scheduled to start
+  status      String      // e.g., "upcoming", "live", "completed"
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  bets        Bet[]
 }
 
 model Bet {
-  id      Int    @id @default(autoincrement())
-  userId  Int
-  matchId Int
-  bet     String // "even" or "odd"
-  // Define relations if needed
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  matchId     Int
+  betChoice   String   // "even" or "odd"
+  amount      Float
+  outcome     String   // "Win" or "Loss"
+  result      Float    // Winning amount (0 if lost)
+  multiplier  Float?   // Optional multiplier applied to the bet
+  timestamp   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+  match       Match    @relation(fields: [matchId], references: [id])
 }

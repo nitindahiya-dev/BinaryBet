@@ -39,18 +39,44 @@ const Betting = () => {
     setShowConfirmModal(true);
   };
 
-  const confirmBet = () => {
+  const confirmBet = async () => {
     const newNumber = generateNumber();
     const isEven = newNumber % 2 === 0;
     const won = (betChoice === 'even' && isEven) || (betChoice === 'odd' && !isEven);
     const winnings = won ? (parseFloat(betAmount) * 1.95).toFixed(6) : 0;
-
+  
     setCurrentNumber(newNumber);
     setIsWin(won);
     setResultMessage(won ? `You won ${winnings} SOL!` : 'Better Luck Next Time!');
     setShowResultModal(true);
     setShowConfirmModal(false);
+  
+    // Save bet data to the database
+    try {
+      // Ensure you have the user's wallet (for instance, from your wallet adapter)
+      const wallet = publicKey.toString(); // Assuming publicKey is available in your component
+      const matchId = selectedMatch.id; // or convert accordingly
+      const betData = {
+        wallet,
+        matchId,
+        betChoice,
+        amount: betAmount,
+        outcome: won ? 'Win' : 'Loss',
+        result: winnings,
+      };
+  
+      const response = await fetch('/api/bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(betData),
+      });
+      const savedBet = await response.json();
+      console.log('Bet saved:', savedBet);
+    } catch (error) {
+      console.error('Error saving bet:', error);
+    }
   };
+  
 
   const resetGame = () => {
     setSelectedMatch(null);
@@ -72,7 +98,7 @@ const Betting = () => {
   <div className="relative inline-block">
     <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-500 bg-clip-text text-transparent animate-gradient">
       <span className="inline-block align-middle mr-3">🎮</span>
-      SOL Predictor
+      BinaryBet
       <span className="inline-block align-middle ml-3">🎲</span>
     </h1>
     <div className="absolute inset-x-0 -bottom-2 mx-auto h-px w-3/4 bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0" />

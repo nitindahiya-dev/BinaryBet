@@ -26,6 +26,25 @@ const Dashboard = () => {
     availableBalance: 10.5,
   };
 
+  useEffect(() => {
+    if (connected && publicKey) {
+      // Save or update user profile in the database
+      fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          wallet: publicKey.toString(),
+          username: `_${publicKey.toString().slice(0, 4)}`, // or any username logic
+          avatarUrl: `https://api.dicebear.com/6.x/identicon/svg?seed=${publicKey.toString()}`
+        }),
+      })
+        .then(response => response.json())
+        .then(data => console.log('User saved:', data))
+        .catch(error => console.error('Error saving user:', error));
+    }
+  }, [connected, publicKey]);
+  
+
   const mockBetHistory = [
     { id: 1, amount: 1.5, prediction: 'Even', outcome: 'Win', result: 3.0, timestamp: '2024-03-20 14:30' },
     { id: 2, amount: 2.0, prediction: 'Odd', outcome: 'Loss', result: 0.0, timestamp: '2024-03-20 13:45' },
