@@ -14,50 +14,33 @@ const Dashboard = () => {
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('SOL');
   const [error, setError] = useState('');
-  const [notification, setNotification] = useState(''); // For successful/unsuccessful withdrawal
-
-  // Mock data - replace with actual API calls
-  const mockStats = {
-    totalBets: 42,
-    totalWins: 28,
-    totalLosses: 14,
-    totalWagered: 18.5,
-    winRate: 66.67,
-    availableBalance: 10.5,
-  };
+  const [notification, setNotification] = useState('');
 
   useEffect(() => {
     if (connected && publicKey) {
-      // Save or update user profile in the database
-      fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wallet: publicKey.toString(),
-          username: `_${publicKey.toString().slice(0, 4)}`, // or any username logic
-          avatarUrl: `https://api.dicebear.com/6.x/identicon/svg?seed=${publicKey.toString()}`
-        }),
-      })
+      const wallet = publicKey.toString();
+
+      // Fetch user details (including stats)
+      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${encodeURIComponent(wallet)}`)
         .then(response => response.json())
-        .then(data => console.log('User saved:', data))
-        .catch(error => console.error('Error saving user:', error));
+        .then(data => {
+          console.log('User details:', data);
+          setUserStats(data.stats);
+        })
+        .catch(error => console.error('Error fetching user details:', error));
+
+
+      // Fetch bet history
+      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/bets?wallet=${wallet}`)
+        .then(response => response.json())
+        .then(data => {
+          console.log('Bet history:', data);
+          setBetHistory(data.bets);
+        })
+        .catch(error => console.error('Error fetching bet history:', error));
     }
   }, [connected, publicKey]);
-  
 
-  const mockBetHistory = [
-    { id: 1, amount: 1.5, prediction: 'Even', outcome: 'Win', result: 3.0, timestamp: '2024-03-20 14:30' },
-    { id: 2, amount: 2.0, prediction: 'Odd', outcome: 'Loss', result: 0.0, timestamp: '2024-03-20 13:45' },
-    // Add more mock data...
-  ];
-
-  useEffect(() => {
-    if (connected && publicKey) {
-      // TODO: Fetch actual user data from API
-      setUserStats(mockStats);
-      setBetHistory(mockBetHistory);
-    }
-  }, [connected, publicKey]);
 
   // Withdrawal handler with UI feedback
   const handleWithdrawal = (e) => {
@@ -70,28 +53,23 @@ const Dashboard = () => {
       return;
     }
 
-    if (amount > mockStats.availableBalance) {
+    if (userStats && amount > userStats.availableBalance) {
       setError('Amount exceeds available balance');
       setNotification('');
       return;
     }
 
-    // TODO: Add actual withdrawal logic
-    // Simulate a successful withdrawal
+    // Simulate a successful withdrawal (update with real logic)
     setNotification(`Withdrawal request for ${amount} ${selectedCurrency} submitted successfully.`);
     setError('');
     setWithdrawAmount('');
-
-    // If unsuccessful, you can call setError('Your error message') and clear notification.
   };
-
 
   const username = publicKey ? ` _${publicKey.toString().slice(0, 4)}` : 'Anonymous';
   const avatarUrl = publicKey
     ? `https://api.dicebear.com/6.x/identicon/svg?seed=${publicKey.toString()}`
     : `https://api.dicebear.com/6.x/identicon/svg?seed=anonymous`;
 
-  // If wallet not connected, show a message
   if (!connected) {
     return (
       <Layout>
@@ -116,18 +94,12 @@ const Dashboard = () => {
             <div className="flex items-center space-x-4">
               <img src={avatarUrl} alt="User Avatar" className="w-16 h-16 rounded-full" />
               <div>
-                <h2 className="text-2xl font-bold text-gray-100">
-                  {username}
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-100">{username}</h2>
                 <p className="text-gray-400 mt-1">
-                  Solana Wallet Address:{" "}
-                  {publicKey
-                    ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
-                    : 'Anonymous'}
+                  Solana Wallet Address: {publicKey ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}` : 'Anonymous'}
                 </p>
               </div>
             </div>
-
 
             {/* Withdrawal Form */}
             <div className="w-full md:w-auto mt-6 md:mt-0">
@@ -150,18 +122,15 @@ const Dashboard = () => {
                     <option value="USDC">USDC</option>
                   </select>
                 </div>
-
                 <div className="text-sm text-gray-400 space-y-1">
-                  <p>Available: {mockStats?.availableBalance?.toFixed(2) || '0.00'} SOL</p>
+                  <p>Available: {userStats ? userStats.availableBalance.toFixed(2) : '0.00'} SOL</p>
                   <p>Network Fee: 0.001 SOL</p>
                   {withdrawAmount && (
                     <p>You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL</p>
                   )}
                 </div>
-
                 {error && <p className="text-red-400 text-sm">{error}</p>}
                 {notification && <p className="text-green-400 text-sm">{notification}</p>}
-
                 <button
                   type="submit"
                   className="flex items-center justify-center gap-2 px-6 py-3 bg-cyan-600/30 hover:bg-cyan-600/40 rounded-lg text-cyan-400 transition-colors"
@@ -179,22 +148,24 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiActivity className="w-8 h-8 text-cyan-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{mockStats.totalBets}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalBets : 0}</h3>
               <p className="text-gray-400">Total Bets</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiTrendingUp className="w-8 h-8 text-green-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{mockStats.totalWins}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalWins : 0}</h3>
               <p className="text-gray-400">Total Wins</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiAlertCircle className="w-8 h-8 text-red-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{mockStats.totalLosses}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalLosses : 0}</h3>
               <p className="text-gray-400">Total Losses</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiDollarSign className="w-8 h-8 text-purple-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{mockStats.winRate}%</h3>
+              <h3 className="text-2xl font-bold text-gray-100">
+                {userStats ? userStats.winRate.toFixed(2) : 0}%
+              </h3>
               <p className="text-gray-400">Win Rate</p>
             </div>
           </div>
@@ -219,7 +190,7 @@ const Dashboard = () => {
                     <td className="px-6 py-4 text-gray-300">{bet.amount} SOL</td>
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400">
-                        {bet.prediction}
+                        {bet.betChoice}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -233,7 +204,7 @@ const Dashboard = () => {
                     <td className="px-6 py-4 text-gray-300">{bet.result} SOL</td>
                     <td className="px-6 py-4 text-gray-400">
                       <FiClock className="inline-block w-4 h-4 mr-2" />
-                      {bet.timestamp}
+                      {new Date(bet.timestamp).toLocaleString()}
                     </td>
                   </tr>
                 ))}

@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useTheme } from 'next-themes';
+// import { useTheme } from 'next-themes';
 import {
   FiArrowRight, FiDollarSign, FiTrendingUp, FiUsers,
   FiCheck, FiClock, FiBarChart2, FiSun, FiMoon,
@@ -13,7 +13,7 @@ import { WalletNotSelectedError } from '@solana/wallet-adapter-base';
 
 const Home = () => {
   const { connected, connect } = useWallet();
-  const { theme, setTheme } = useTheme();
+  // const { theme, setTheme } = useTheme();
   const [counters, setCounters] = useState({ users: 0, matches: 0, bets: 0 });
   const [openFaq, setOpenFaq] = useState(null);
 
@@ -102,7 +102,7 @@ const Home = () => {
         </div>
 
         {/* Theme Toggle */}
-        <button
+        {/* <button
           onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
           className="fixed bottom-8 right-8 p-3 bg-gray-800/50 backdrop-blur-sm border border-gray-700/50 rounded-xl hover:border-teal-400/30 transition-colors"
         >
@@ -111,7 +111,7 @@ const Home = () => {
           ) : (
             <FiMoon className="w-6 h-6 text-teal-400" />
           )}
-        </button>
+        </button> */}
       </section>
 
       {/* How It Works Section */}
