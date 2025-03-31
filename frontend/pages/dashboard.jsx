@@ -1,8 +1,12 @@
-// frontend/pages/dashboard.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
-  FiActivity, FiDollarSign, FiTrendingUp, FiAlertCircle, FiClock, FiLogOut
+  FiActivity,
+  FiDollarSign,
+  FiTrendingUp,
+  FiAlertCircle,
+  FiClock,
+  FiLogOut,
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
 
@@ -11,61 +15,112 @@ const Dashboard = () => {
   const [userStats, setUserStats] = useState(null);
   const [betHistory, setBetHistory] = useState([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
-  const [withdrawAddress, setWithdrawAddress] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('SOL');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
 
-  useEffect(() => {
+  // Fetch user details (including real balance)
+  const fetchUserStats = useCallback(async () => {
     if (connected && publicKey) {
       const wallet = publicKey.toString();
-
-      // Fetch user details (including stats)
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${encodeURIComponent(wallet)}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('User details:', data);
-          setUserStats(data.stats);
-        })
-        .catch(error => console.error('Error fetching user details:', error));
-
-
-      // Fetch bet history
-      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/bets?wallet=${wallet}`)
-        .then(response => response.json())
-        .then(data => {
-          console.log('Bet history:', data);
-          setBetHistory(data.bets);
-        })
-        .catch(error => console.error('Error fetching bet history:', error));
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${encodeURIComponent(wallet)}`
+        );
+        const data = await res.json();
+        console.log('User details:', data);
+        setUserStats(data.stats);
+      } catch (err) {
+        console.error('Error fetching user details:', err);
+      }
     }
   }, [connected, publicKey]);
 
+  // Fetch bet history
+  const fetchBetHistory = useCallback(async () => {
+    if (connected && publicKey) {
+      const wallet = publicKey.toString();
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/bets?wallet=${wallet}`
+        );
+        const data = await res.json();
+        console.log('Bet history:', data);
+        setBetHistory(data.bets);
+      } catch (err) {
+        console.error('Error fetching bet history:', err);
+      }
+    }
+  }, [connected, publicKey]);
 
-  // Withdrawal handler with UI feedback
-  const handleWithdrawal = (e) => {
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchUserStats();
+      fetchBetHistory();
+    }
+  }, [connected, publicKey, fetchUserStats, fetchBetHistory]);
+
+  // Refresh user stats every 15 seconds for up-to-date balance
+  useEffect(() => {
+    if (connected && publicKey) {
+      const interval = setInterval(() => {
+        fetchUserStats();
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [connected, publicKey, fetchUserStats]);
+
+  const handleWithdrawal = async (e) => {
     e.preventDefault();
     const amount = parseFloat(withdrawAmount);
+    const networkFee = 0.001;
+    const totalAmount = amount + networkFee;
 
     if (!amount || amount <= 0) {
       setError('Please enter a valid amount');
       setNotification('');
       return;
     }
-
-    if (userStats && amount > userStats.availableBalance) {
-      setError('Amount exceeds available balance');
+    if (userStats && totalAmount > userStats.availableBalance) {
+      setError('Amount plus network fee exceeds available balance');
       setNotification('');
       return;
     }
-
-    // Simulate a successful withdrawal (update with real logic)
-    setNotification(`Withdrawal request for ${amount} ${selectedCurrency} submitted successfully.`);
-    setError('');
-    setWithdrawAmount('');
+    try {
+      const wallet = publicKey.toString();
+      const withdrawalData = {
+        wallet,
+        amount: withdrawAmount, // Only the withdrawal amount
+        currency: selectedCurrency,
+      };
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/withdrawals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(withdrawalData),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setNotification(`Withdrawal of ${withdrawAmount} ${selectedCurrency} submitted successfully.`);
+        setError('');
+        setWithdrawAmount('');
+        // Update balance from response if available or re-fetch stats
+        if (data.updatedBalance !== undefined) {
+          setUserStats((prev) => ({ ...prev, availableBalance: data.updatedBalance }));
+        } else {
+          fetchUserStats();
+        }
+      } else {
+        setError(data.error || 'Withdrawal failed');
+        setNotification('');
+      }
+    } catch (error) {
+      console.error('Error processing withdrawal:', error);
+      setError('Withdrawal failed due to a network error.');
+      setNotification('');
+    }
   };
 
-  const username = publicKey ? ` _${publicKey.toString().slice(0, 4)}` : 'Anonymous';
+  const username = publicKey ? `_${publicKey.toString().slice(0, 6)}` : 'Anonymous';
   const avatarUrl = publicKey
     ? `https://api.dicebear.com/6.x/identicon/svg?seed=${publicKey.toString()}`
     : `https://api.dicebear.com/6.x/identicon/svg?seed=anonymous`;
@@ -85,6 +140,7 @@ const Dashboard = () => {
       </Layout>
     );
   }
+
   return (
     <Layout>
       <div className="min-h-screen bg-gray-900">
@@ -96,11 +152,13 @@ const Dashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold text-gray-100">{username}</h2>
                 <p className="text-gray-400 mt-1">
-                  Solana Wallet Address: {publicKey ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}` : 'Anonymous'}
+                  Solana Wallet Address:{" "}
+                  {publicKey
+                    ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
+                    : 'Anonymous'}
                 </p>
               </div>
             </div>
-
             {/* Withdrawal Form */}
             <div className="w-full md:w-auto mt-6 md:mt-0">
               <form onSubmit={handleWithdrawal} className="flex flex-col gap-4">
@@ -123,10 +181,14 @@ const Dashboard = () => {
                   </select>
                 </div>
                 <div className="text-sm text-gray-400 space-y-1">
-                  <p>Available: {userStats ? userStats.availableBalance.toFixed(2) : '0.00'} SOL</p>
+                  <p>
+                    Available: {userStats ? userStats.availableBalance.toFixed(2) : '0.00'} SOL
+                  </p>
                   <p>Network Fee: 0.001 SOL</p>
                   {withdrawAmount && (
-                    <p>You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL</p>
+                    <p>
+                      You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL
+                    </p>
                   )}
                 </div>
                 {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -142,23 +204,28 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         {/* Stats Overview */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiActivity className="w-8 h-8 text-cyan-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalBets : 0}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">
+                {userStats ? userStats.totalBets : 0}
+              </h3>
               <p className="text-gray-400">Total Bets</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiTrendingUp className="w-8 h-8 text-green-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalWins : 0}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">
+                {userStats ? userStats.totalWins : 0}
+              </h3>
               <p className="text-gray-400">Total Wins</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiAlertCircle className="w-8 h-8 text-red-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">{userStats ? userStats.totalLosses : 0}</h3>
+              <h3 className="text-2xl font-bold text-gray-100">
+                {userStats ? userStats.totalLosses : 0}
+              </h3>
               <p className="text-gray-400">Total Losses</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
@@ -170,18 +237,27 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
-
         {/* Bet History Table */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-cyan-500/20 overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-700/50">
               <thead className="bg-gray-700/20">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Amount</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Prediction</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Outcome</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Result</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Date</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
+                    Amount
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
+                    Prediction
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
+                    Outcome
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
+                    Result
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
@@ -194,10 +270,13 @@ const Dashboard = () => {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.outcome === 'Win'
-                        ? 'bg-green-500/10 text-green-400'
-                        : 'bg-red-500/10 text-red-400'
-                        }`}>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          bet.outcome === 'Win'
+                            ? 'bg-green-500/10 text-green-400'
+                            : 'bg-red-500/10 text-red-400'
+                        }`}
+                      >
                         {bet.outcome}
                       </span>
                     </td>

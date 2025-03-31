@@ -4,15 +4,19 @@ binarybet/
 │   ├── .env                   	# Environment variables (e.g., DB credentials)
 │   ├── prisma/                   # Prisma ORM files (if you use a database)
 │   │   └── schema.prisma         # Database schema file
+│   │   └── seed.js
 │   ├── src/
 │   │   ├── index.js              # Entry point for the backend server
 │   │   ├── routes/
 │   │   │   ├── auth.js           # API routes for authentication
-│   │   │   └── matches.js        # API routes for matches and bets
+│   │   │   └── matches.js        # API routes for matches
+│   │   │   └── bet.js        # API routes for bets
+│   │   │   └── user.js        # API routes for user
+│   │   │   └── withdrawal.js        # API routes for withdrawal
 │   │   └── controllers/
 │   │       ├── authController.js # Logic for handling authentication
-│   │       └── matchController.js# Logic for handling match & bet processing
-│   └── README.md                 # Backend-specific documentation
+│   │       └── matchController.js # Logic for handling match
+│   │       └── betController.js # Logic for bet processing
 ├── binarybet/                     # Solana smart contract (Anchor project)                
 │       ├── Cargo.toml            # Rust project configuration for the smart contract
 │       ├── Anchor.toml 

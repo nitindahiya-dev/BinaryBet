@@ -1,17 +1,59 @@
-// frontend/pages/betting.jsx
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { FiCheckCircle, FiXCircle, FiDollarSign, FiRefreshCw } from 'react-icons/fi';
-import Layout from '../components/Layout'
-import { useWallet } from '@solana/wallet-adapter-react';
+import Layout from '../components/Layout';
+
+// Replace with your actual bet pool public key
+const YOUR_BET_POOL_PUBLIC_KEY = 'BAUkJe7i5u5J9hUJDDwmyJC8SKCXJ6YEZdQaUsPo3JeN';
 
 const mockMatches = [
   { id: 1, status: 'live', startTime: '2023-10-05T15:00:00' },
   { id: 2, status: 'upcoming', startTime: '2023-10-05T15:30:00' },
 ];
 
+// Poll for confirmation until finalized or timeout reached
+const waitForConfirmation = async (connection, signature, timeout = 60000) => {
+  const startTime = Date.now();
+  while (Date.now() - startTime < timeout) {
+    const statusResponse = await connection.getSignatureStatus(signature);
+    const status = statusResponse.value;
+    if (status && status.confirmationStatus === 'finalized') {
+      return status;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+  throw new Error('Transaction confirmation timed out');
+};
+
+const sendBetPayment = async (amount, wallet, connection) => {
+  const lamports = parseFloat(amount) * LAMPORTS_PER_SOL;
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  const transaction = new Transaction({
+    recentBlockhash: blockhash,
+    feePayer: wallet.publicKey,
+  }).add(
+    SystemProgram.transfer({
+      fromPubkey: wallet.publicKey,
+      toPubkey: YOUR_BET_POOL_PUBLIC_KEY,
+      lamports,
+    })
+  );
+
+  // Sign and send the transaction
+  const signedTransaction = await wallet.signTransaction(transaction);
+  const signature = await connection.sendRawTransaction(signedTransaction.serialize());
+  // Wait for confirmation (with custom polling)
+  await waitForConfirmation(connection, signature, 60000);
+  return signature;
+};
+
 const Betting = () => {
   const router = useRouter();
+  const { publicKey, signTransaction } = useWallet();
+  const { connection } = useConnection();
+
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [currentNumber, setCurrentNumber] = useState(null);
   const [showResultModal, setShowResultModal] = useState(false);
@@ -21,7 +63,8 @@ const Betting = () => {
   const [isWin, setIsWin] = useState(false);
   const [resultMessage, setResultMessage] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const { publicKey } = useWallet();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [errorPopup, setErrorPopup] = useState(''); // For error popup
 
   const generateNumber = () => Math.floor(Math.random() * 10) + 1;
 
@@ -42,29 +85,33 @@ const Betting = () => {
   };
 
   const confirmBet = async () => {
-    const newNumber = generateNumber();
-    const isEven = newNumber % 2 === 0;
-    const won = (betChoice === 'even' && isEven) || (betChoice === 'odd' && !isEven);
-    const winnings = won ? (parseFloat(betAmount) * 1.95).toFixed(6) : 0;
-
-    setCurrentNumber(newNumber);
-    setIsWin(won);
-    setResultMessage(won ? `You won ${winnings} SOL!` : 'Better Luck Next Time!');
-    setShowResultModal(true);
-    setShowConfirmModal(false);
-
-    // Save bet data to the database
     try {
-      if (!publicKey) throw new Error('Wallet not connected');
-      const wallet = publicKey.toString();
+      if (!publicKey || !signTransaction) throw new Error('Wallet not connected');
+      
+      // Generate outcome before payment
+      const newNumber = generateNumber();
+      const isEven = newNumber % 2 === 0;
+      const won = (betChoice === 'even' && isEven) || (betChoice === 'odd' && !isEven);
+      const winnings = won ? (parseFloat(betAmount) * 1.95).toFixed(6) : 0;
+      
+      setIsProcessingPayment(true);
+      const walletObj = { publicKey, signTransaction };
+      // Send SOL payment from user's wallet to bet pool
+      const txSignature = await sendBetPayment(betAmount, walletObj, connection);
+      console.log('Payment transaction signature:', txSignature);
+      setIsProcessingPayment(false);
+      
+      // Record bet data on backend
+      const walletStr = publicKey.toString();
       const matchId = selectedMatch.id;
       const betData = {
-        wallet,
+        wallet: walletStr,
         matchId,
         betChoice,
         amount: betAmount,
         outcome: won ? 'Win' : 'Loss',
         result: winnings,
+        txSignature,
       };
 
       const response = await fetch(
@@ -77,12 +124,22 @@ const Betting = () => {
       );
       const savedBet = await response.json();
       console.log('Bet saved:', savedBet);
+      
+      // Show the result modal with outcome
+      setCurrentNumber(newNumber);
+      setIsWin(won);
+      setResultMessage(won ? `You won ${winnings} SOL!` : 'Better Luck Next Time!');
+      setShowResultModal(true);
     } catch (error) {
       console.error('Error saving bet:', error);
+      // Instead of alert(), set an error popup message
+      if (error.message.includes('expired') || error.message.includes('block height')) {
+        setErrorPopup("Payment expired. Please try again.");
+      } else {
+        setErrorPopup("Payment unsuccessful. Please try again.");
+      }
     }
   };
-
-
 
   const resetGame = () => {
     setSelectedMatch(null);
@@ -92,6 +149,11 @@ const Betting = () => {
     setShowResultModal(false);
     setShowConfirmModal(false);
     setErrorMessage('');
+  };
+
+  const closeErrorPopup = () => {
+    setErrorPopup('');
+    router.push('/betting');
   };
 
   return (
@@ -109,18 +171,18 @@ const Betting = () => {
                 </h1>
                 <div className="absolute inset-x-0 -bottom-2 mx-auto h-px w-3/4 bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0" />
               </div>
-
               {/* Match Selection */}
               <div className="relative group mt-8">
                 <label className="block text-sm font-medium text-cyan-300 mb-2 text-left">
                   Select Match Event
                   <span className="ml-2 text-xs text-gray-400">(Live updates every 30s)</span>
                 </label>
-
                 <div className="relative rounded-lg transition-all duration-300 group-hover:border-cyan-400/50">
                   <select
                     value={selectedMatch?.id || ''}
-                    onChange={(e) => setSelectedMatch(mockMatches.find(m => m.id === parseInt(e.target.value)))}
+                    onChange={(e) =>
+                      setSelectedMatch(mockMatches.find(m => m.id === parseInt(e.target.value)))
+                    }
                     className="w-full pl-4 pr-10 py-3.5 bg-gray-800/60 backdrop-blur-sm rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 text-gray-200 appearance-none transition-all"
                   >
                     <option value="" className="text-gray-400">Choose a match to predict...</option>
@@ -138,7 +200,6 @@ const Betting = () => {
                         })}
                       </option>
                     ))}
-
                   </select>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                     <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -146,7 +207,6 @@ const Betting = () => {
                     </svg>
                   </div>
                 </div>
-
                 {/* Live Status Indicator */}
                 {selectedMatch?.status === 'live' && (
                   <div className="absolute right-4 top-[52px] flex items-center">
@@ -159,7 +219,6 @@ const Betting = () => {
                 )}
               </div>
             </div>
-
             {/* Prediction Interface */}
             {selectedMatch && (
               <>
@@ -170,17 +229,15 @@ const Betting = () => {
                     </span>
                   </div>
                 </div>
-
                 {!betChoice ? (
                   <div className="grid grid-cols-2 gap-4 mb-4">
-                    < button
+                    <button
                       onClick={() => setBetChoice('even')}
                       className="p-4 bg-green-500/10 hover:bg-green-500/20 rounded-xl border border-green-500/30 flex flex-col items-center justify-center transition-all"
                     >
                       <FiCheckCircle className="w-8 h-8 text-green-400 mb-2" />
                       <span className="text-xl font-semibold text-green-400">Even</span>
                     </button>
-
                     <button
                       onClick={() => setBetChoice('odd')}
                       className="p-4 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl border border-purple-500/30 flex flex-col items-center justify-center transition-all"
@@ -209,22 +266,21 @@ const Betting = () => {
                     </div>
                   </div>
                 )}
-
                 {/* Action Buttons */}
                 {errorMessage && (
                   <div className="mt-4 text-center text-red-400 text-sm">
                     {errorMessage}
                   </div>
                 )}
-
                 <div className="mt-6 space-y-3">
                   {betChoice && (
                     <button
                       onClick={handleProceed}
+                      disabled={isProcessingPayment}
                       className="w-full p-3 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-cyan-400 flex items-center justify-center space-x-2 transition-colors"
                     >
                       <FiDollarSign className="w-5 h-5" />
-                      <span>Proceed to Bet</span>
+                      <span>{isProcessingPayment ? 'Processing Payment...' : 'Proceed to Bet'}</span>
                     </button>
                   )}
                   <button
@@ -238,7 +294,6 @@ const Betting = () => {
               </>
             )}
           </div>
-
           {/* Confirmation Modal */}
           {showConfirmModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -274,47 +329,60 @@ const Betting = () => {
               </div>
             </div>
           )}
-
           {/* Result Modal */}
-          {showResultModal && (<div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className={`bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border ${isWin ? 'border-green-500/30' : 'border-red-500/30'
-              }`}>
-              <div className="text-center">
-                <div className={`mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center ${isWin ? 'bg-green-500/10' : 'bg-red-500/10'
-                  }`}>
-                  {isWin ? (
-                    <FiCheckCircle className="w-8 h-8 text-green-400" />
-                  ) : (
-                    <FiXCircle className="w-8 h-8 text-red-400" />
-                  )}
-                </div>
-                <h2 className={`text-2xl font-bold mb-2 ${isWin ? 'text-green-400' : 'text-red-400'}`}>
-                  {isWin ? 'Victory!' : 'Defeat!'}
-                </h2>
-                <div className="mb-4 text-gray-300">
-                  <p>Resulting Number: <span className="text-cyan-400 font-bold">{currentNumber}</span></p>
-                  <p className="mt-2">{resultMessage}</p>
-                </div>
-                <div className="text-sm text-gray-400 mb-4">
-                  Result verified by decentralized RNG
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={resetGame}
-                    className="p-3 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-colors"
-                  >
-                    Bet Again
-                  </button>
-                  <button
-                    onClick={() => router.push('/dashboard')}
-                    className="p-3 bg-gray-700/30 hover:bg-gray-700/50 rounded-lg text-gray-300 transition-colors"
-                  >
-                    Go to Dashboard
-                  </button>
+          {showResultModal && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className={`bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border ${isWin ? 'border-green-500/30' : 'border-red-500/30'}`}>
+                <div className="text-center">
+                  <div className={`mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center ${isWin ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                    {isWin ? (
+                      <FiCheckCircle className="w-8 h-8 text-green-400" />
+                    ) : (
+                      <FiXCircle className="w-8 h-8 text-red-400" />
+                    )}
+                  </div>
+                  <h2 className={`text-2xl font-bold mb-2 ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                    {isWin ? 'Victory!' : 'Defeat!'}
+                  </h2>
+                  <div className="mb-4 text-gray-300">
+                    <p>Resulting Number: <span className="text-cyan-400 font-bold">{currentNumber}</span></p>
+                    <p className="mt-2">{resultMessage}</p>
+                  </div>
+                  <div className="text-sm text-gray-400 mb-4">
+                    Result verified by decentralized RNG
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={resetGame}
+                      className="p-3 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-colors"
+                    >
+                      Bet Again
+                    </button>
+                    <button
+                      onClick={() => router.push('/dashboard')}
+                      className="p-3 bg-gray-700/30 hover:bg-gray-700/50 rounded-lg text-gray-300 transition-colors"
+                    >
+                      Go to Dashboard
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
+          {/* Error Popup Modal */}
+          {errorPopup && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+              <div className="bg-gray-800 rounded-2xl p-6 max-w-md w-full">
+                <h2 className="text-xl font-bold text-red-400 mb-4">Payment Error</h2>
+                <p className="text-gray-300 mb-6">{errorPopup}</p>
+                <button
+                  onClick={closeErrorPopup}
+                  className="w-full p-3 bg-red-500 hover:bg-red-600 rounded-lg text-white transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

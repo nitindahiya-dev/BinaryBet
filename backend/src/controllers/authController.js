@@ -10,8 +10,8 @@ exports.upsertUser = async (req, res) => {
   try {
     const user = await prisma.user.upsert({
       where: { wallet },
-      update: { username, avatarUrl },
-      create: { wallet, username, avatarUrl },
+      update: { username, avatarUrl }, // Do not update balance if user already exists.
+      create: { wallet, username, avatarUrl, balance: 10.5 }, // Set starting balance here.
     });
     res.json(user);
   } catch (error) {
@@ -19,3 +19,4 @@ exports.upsertUser = async (req, res) => {
     res.status(500).json({ error: 'Error upserting user' });
   }
 };
+

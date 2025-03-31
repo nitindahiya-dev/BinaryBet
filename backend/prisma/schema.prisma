@@ -8,38 +8,54 @@ generator client {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  wallet    String   @unique
-  username  String?
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  bets      Bet[]
+  id         Int          @id @default(autoincrement())
+  wallet     String       @unique
+  username   String?
+  avatarUrl  String?
+  balance    Float        @default(0) // This holds the real balance
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  bets       Bet[]
+  withdrawals Withdrawal[]
 }
+
 
 model Match {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  startTime   DateTime    // When the match is scheduled to start
-  status      String      // e.g., "upcoming", "live", "completed"
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  startTime   DateTime
+  status      String   // e.g., "upcoming", "live", "completed"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   bets        Bet[]
 }
 
 model Bet {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  matchId     Int
-  betChoice   String   // "even" or "odd"
-  amount      Float
-  outcome     String   // "Win" or "Loss"
-  result      Float    // Winning amount (0 if lost)
-  multiplier  Float?   // Optional multiplier applied to the bet
-  timestamp   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  matchId    Int
+  betChoice  String   // e.g., "even" or "odd"
+  amount     Float
+  status     String   @default("PENDING") // PENDING, WON, LOST
+  outcome    String?  // Set after resolution
+  result     Float?   // Winnings or 0, set after resolution
+  multiplier Float?   // Optional multiplier
+  timestamp  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id])
-  match       Match    @relation(fields: [matchId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  match      Match    @relation(fields: [matchId], references: [id])
+}
+
+model Withdrawal {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  currency  String   // e.g., "SOL", "USDC"
+  status    String   @default("pending") // pending, completed, failed
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id])
 }
