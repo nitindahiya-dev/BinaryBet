@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // Create the new bet
+    // Create the new bet record
     const newBet = await prisma.bet.create({
       data: {
         userId: user.id,
@@ -43,6 +43,15 @@ router.post("/", async (req, res) => {
         result: parseFloat(result),
       },
     });
+
+    // If the bet outcome is a win, update the user's balance by adding the winnings.
+    if (outcome === "Win") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { balance: { increment: parseFloat(result) } },
+      });
+    }
+
     res.status(201).json(newBet);
   } catch (error) {
     console.error("Error creating bet:", error);

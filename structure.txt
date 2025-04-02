@@ -31,6 +31,10 @@ binarybet/
 │   ├── pages/
 │   │   ├── _app.js               # Application wrapper (global providers, layout)
 │   │   ├── index.js              # Landing/Home page
+│   │   ├── terms.js              # Landing/Home page
+│   │   ├── privacy.js              # Landing/Home page
+│   │   ├── responsiblity.js              # Landing/Home page
+│   │   ├── faq.js              # Landing/Home page
 │   │   ├── betting.js            # Betting interface for placing bets
 │   │   └── dashboard.js          # Dashboard to view matches, stats, and withdrawal info
 │   ├── components/               # Reusable UI components
