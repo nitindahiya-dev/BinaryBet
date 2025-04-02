@@ -1,6 +1,6 @@
 # 🚀 Decentralized Sports Betting Platform
 
-![Project Screenshot](screenshot.png)
+![Project Screenshot](demo.png)
 
 > Next-generation betting platform built on Solana blockchain
 

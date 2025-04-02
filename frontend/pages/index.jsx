@@ -69,7 +69,7 @@ const Home = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-8">
+            <h1 className="text-5xl md:text-7xl h-28 md:h-40 font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500 mb-8">
               Decentralized <br />Sports Betting
             </h1>
             <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">

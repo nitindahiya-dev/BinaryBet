@@ -1,6 +1,5 @@
-// frontend/components/Navbar.js
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
@@ -9,13 +8,13 @@ import 'react-toastify/dist/ReactToastify.css';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
   const { connected, disconnect, publicKey, wallet } = useWallet();
   const { setVisible: setModalVisible } = useWalletModal();
 
   const handleConnect = async () => {
     if (!connected) {
       if (!wallet) {
-        // Show notification at top-right
         toast.error("Please install wallet extension to connect wallet", {
           position: "top-right",
           autoClose: 5000,
@@ -23,11 +22,9 @@ export default function Navbar() {
           closeOnClick: true,
           pauseOnHover: true,
           draggable: true,
-          progress: undefined,
         });
         return;
       } else {
-        // Connect using the wallet instance
         await wallet.connect();
       }
     } else {
@@ -40,9 +37,25 @@ export default function Navbar() {
     return `${key.toString().slice(0, 5)}...${key.toString().slice(-5)}`;
   };
 
+  // Handle scroll event to set sticky state
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsSticky(window.scrollY > 50); // Adjust the value as needed
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
   return (
     <>
-      <nav className="bg-gray-800/50 backdrop-blur-md border-b border-cyan-500/20">
+      <motion.nav
+        className={`bg-gray-800/50 backdrop-blur-md border-b border-cyan-500/20 transition-all duration-300 ${isSticky ? 'fixed top-0 left-0 w-full z-50' : 'relative'}`}
+        initial={{ y: 0 }} // Start at 0 to keep it visible
+        animate={{ y: isSticky ? 0 : 0 }} // Keep it at 0 for both states
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/" className="flex items-center space-x-2">
@@ -78,7 +91,7 @@ export default function Navbar() {
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M 6 18L18 6M6 6l12 12" />
                 ) : (
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 )}
@@ -110,7 +123,7 @@ export default function Navbar() {
             </button>
           </motion.div>
         )}
-      </nav>
+      </motion.nav>
       <ToastContainer />
     </>
   );
