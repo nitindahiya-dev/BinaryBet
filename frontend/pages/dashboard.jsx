@@ -1,3 +1,4 @@
+// frontend/pages/dashboard.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -11,113 +12,121 @@ import {
 import Layout from '../components/Layout';
 
 const Dashboard = () => {
-  const { connected, publicKey } = useWallet();
+  const { publicKey } = useWallet();
   const [userStats, setUserStats] = useState(null);
   const [betHistory, setBetHistory] = useState([]);
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('SOL');
   const [error, setError] = useState('');
   const [notification, setNotification] = useState('');
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [loadingBets, setLoadingBets] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch user details (including real balance)
+  const ITEMS_PER_PAGE = 6;
+  const totalPages = Math.ceil(betHistory.length / ITEMS_PER_PAGE);
+  const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+
   const fetchUserStats = useCallback(async () => {
-    if (connected && publicKey) {
-      const wallet = publicKey.toString();
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${encodeURIComponent(wallet)}`
-        );
-        const data = await res.json();
-        console.log('User details:', data);
-        setUserStats(data.stats);
-      } catch (err) {
-        console.error('Error fetching user details:', err);
-      }
+    if (!publicKey) return;
+    setLoadingStats(true);
+    setError('');
+    try {
+      const wallet = encodeURIComponent(publicKey.toString());
+      console.log('Fetching user stats for wallet:', wallet);
+      const res = await fetch(`${BACKEND}/api/users/${wallet}`);
+      console.log('Raw response status:', res.status, 'OK:', res.ok);
+      const data = await res.json();
+      console.log('User stats response:', data);
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch user details');
+      setUserStats(data.stats);
+    } catch (err) {
+      console.error('Error fetching user stats:', err);
+      setError(err.message);
+    } finally {
+      setLoadingStats(false);
     }
-  }, [connected, publicKey]);
+  }, [publicKey]);
 
-  // Fetch bet history
   const fetchBetHistory = useCallback(async () => {
-    if (connected && publicKey) {
-      const wallet = publicKey.toString();
-      try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/bets?wallet=${wallet}`
-        );
-        const data = await res.json();
-        console.log('Bet history:', data);
-        setBetHistory(data.bets);
-      } catch (err) {
-        console.error('Error fetching bet history:', err);
-      }
+    if (!publicKey) return;
+    setLoadingBets(true);
+    setError('');
+    try {
+      const wallet = encodeURIComponent(publicKey.toString());
+      console.log('Fetching bet history for wallet:', wallet);
+      const res = await fetch(`${BACKEND}/api/bets?wallet=${wallet}`);
+      console.log('Raw response status:', res.status, 'OK:', res.ok);
+      const data = await res.json();
+      console.log('Bet history response:', data);
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch bet history');
+      setBetHistory(data.bets || []);
+    } catch (err) {
+      console.error('Error fetching bet history:', err);
+      setError(err.message);
+    } finally {
+      setLoadingBets(false);
     }
-  }, [connected, publicKey]);
+  }, [publicKey]);
 
   useEffect(() => {
-    if (connected && publicKey) {
+    if (publicKey) {
+      console.log('Public key available, fetching data...');
       fetchUserStats();
       fetchBetHistory();
     }
-  }, [connected, publicKey, fetchUserStats, fetchBetHistory]);
+  }, [publicKey, fetchUserStats, fetchBetHistory]);
 
-  // Refresh user stats every 15 seconds for up-to-date balance
   useEffect(() => {
-    if (connected && publicKey) {
-      const interval = setInterval(() => {
-        fetchUserStats();
-      }, 15000);
-      return () => clearInterval(interval);
+    if (publicKey) {
+      const iv = setInterval(fetchUserStats, 100000);
+      return () => clearInterval(iv);
     }
-  }, [connected, publicKey, fetchUserStats]);
+  }, [publicKey, fetchUserStats]);
 
   const handleWithdrawal = async (e) => {
     e.preventDefault();
+    if (!userStats) return;
     const amount = parseFloat(withdrawAmount);
-    const networkFee = 0.001;
-    const totalAmount = amount + networkFee;
-
+    const fee = 0.001;
     if (!amount || amount <= 0) {
       setError('Please enter a valid amount');
-      setNotification('');
       return;
     }
-    if (userStats && totalAmount > userStats.availableBalance) {
+    if (amount + fee > userStats.availableBalance) {
       setError('Amount plus network fee exceeds available balance');
-      setNotification('');
       return;
     }
     try {
       const wallet = publicKey.toString();
-      const withdrawalData = {
-        wallet,
-        amount: withdrawAmount, // Only the withdrawal amount
-        currency: selectedCurrency,
-      };
-      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/withdrawals`, {
+      const res = await fetch(`${BACKEND}/api/withdrawals`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(withdrawalData),
+        body: JSON.stringify({ wallet, amount, currency: selectedCurrency }),
       });
-      const data = await response.json();
-      if (response.ok) {
-        setNotification(`Withdrawal of ${withdrawAmount} ${selectedCurrency} submitted successfully.`);
-        setError('');
-        setWithdrawAmount('');
-        // Update balance from response if available or re-fetch stats
-        if (data.updatedBalance !== undefined) {
-          setUserStats((prev) => ({ ...prev, availableBalance: data.updatedBalance }));
-        } else {
-          fetchUserStats();
-        }
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Withdrawal failed');
+      setNotification(`Withdrawal of ${amount} ${selectedCurrency} submitted.`);
+      setError('');
+      setWithdrawAmount('');
+      if (data.updatedBalance !== undefined) {
+        setUserStats(prev => ({ ...prev, availableBalance: data.updatedBalance }));
       } else {
-        setError(data.error || 'Withdrawal failed');
-        setNotification('');
+        fetchUserStats();
       }
-    } catch (error) {
-      console.error('Error processing withdrawal:', error);
-      setError('Withdrawal failed due to a network error.');
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
       setNotification('');
     }
+  };
+
+  const paginatedBets = betHistory.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   const username = publicKey ? `_${publicKey.toString().slice(0, 6)}` : 'Anonymous';
@@ -125,17 +134,40 @@ const Dashboard = () => {
     ? `https://api.dicebear.com/6.x/identicon/svg?seed=${publicKey.toString()}`
     : `https://api.dicebear.com/6.x/identicon/svg?seed=anonymous`;
 
-  if (!connected) {
+  if (!publicKey) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center flex-col bg-gray-900">
+          <FiAlertCircle className="w-16 h-16 text-cyan-400 mx-auto mb-6" />
+          <h1 className="text-3xl font-bold text-gray-100 mb-4">Wallet Not Connected</h1>
+          <p className="text-gray-400 mb-8">Please connect your wallet to view your dashboard.</p>
+        </div>
+      </Layout>
+    );
+  }
+  if (error) {
     return (
       <Layout>
         <div className="min-h-screen flex items-center justify-center bg-gray-900">
-          <div className="text-center max-w-2xl">
-            <FiAlertCircle className="w-16 h-16 text-cyan-400 mx-auto mb-6" />
-            <h1 className="text-3xl font-bold text-gray-100 mb-4">Wallet Not Connected</h1>
-            <p className="text-gray-400 mb-8">
-              Please connect your wallet to view your betting dashboard and access all features.
-            </p>
-          </div>
+          <p className="text-red-400">{error}</p>
+        </div>
+      </Layout>
+    );
+  }
+  if (loadingStats || loadingBets) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <p className="text-gray-400">Loading dashboard data...</p>
+        </div>
+      </Layout>
+    );
+  }
+  if (!userStats) {
+    return (
+      <Layout>
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+          <p className="text-gray-400">No user stats available.</p>
         </div>
       </Layout>
     );
@@ -152,50 +184,46 @@ const Dashboard = () => {
               <div>
                 <h2 className="text-2xl font-bold text-gray-100">{username}</h2>
                 <p className="text-gray-400 mt-1">
-                  Solana Wallet Address:{" "}
                   {publicKey
                     ? `${publicKey.toString().slice(0, 6)}...${publicKey.toString().slice(-4)}`
                     : 'Anonymous'}
                 </p>
               </div>
             </div>
-            {/* Withdrawal Form */}
             <div className="w-full md:w-auto mt-6 md:mt-0">
               <form onSubmit={handleWithdrawal} className="flex flex-col gap-4">
                 <div className="flex items-center gap-4">
                   <input
                     type="number"
                     value={withdrawAmount}
-                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    onChange={e => setWithdrawAmount(e.target.value)}
                     placeholder="Amount"
-                    className="bg-gray-700/30 backdrop-blur-sm px-4 py-2 rounded-lg border border-cyan-500/20 text-gray-100 focus:outline-none focus:border-cyan-400"
                     step="0.01"
+                    className="bg-gray-700/30 px-4 py-2 rounded-lg border border-cyan-500/20 text-gray-100"
                   />
                   <select
                     value={selectedCurrency}
-                    onChange={(e) => setSelectedCurrency(e.target.value)}
-                    className="bg-gray-700/30 backdrop-blur-sm px-4 py-2 rounded-lg border border-cyan-500/20 text-gray-100 focus:outline-none focus:border-cyan-400"
+                    onChange={e => setSelectedCurrency(e.target.value)}
+                    className="bg-gray-700/30 px-4 py-2 rounded-lg border border-cyan-500/20 text-gray-100"
                   >
-                    <option value="SOL">SOL</option>
-                    <option value="USDC">USDC</option>
+                    <option>SOL</option>
+                    <option>USDC</option>
                   </select>
                 </div>
                 <div className="text-sm text-gray-400 space-y-1">
                   <p>
-                    Available: {userStats ? userStats.availableBalance.toFixed(2) : '0.00'} SOL
+                    Available:{' '}
+                    {Math.max(0, userStats.availableBalance).toFixed(2)} SOL
                   </p>
                   <p>Network Fee: 0.001 SOL</p>
                   {withdrawAmount && (
-                    <p>
-                      You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL
-                    </p>
+                    <p>You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL</p>
                   )}
                 </div>
-                {error && <p className="text-red-400 text-sm">{error}</p>}
                 {notification && <p className="text-green-400 text-sm">{notification}</p>}
                 <button
                   type="submit"
-                  className="flex items-center justify-center gap-2 px-6 py-3 bg-cyan-600/30 hover:bg-cyan-600/40 rounded-lg text-cyan-400 transition-colors"
+                  className="flex items-center justify-center gap-2 px-6 py-3 bg-cyan-600/30 hover:bg-cyan-600/40 rounded-lg text-cyan-400"
                 >
                   <FiLogOut className="w-5 h-5" />
                   Withdraw Funds
@@ -209,30 +237,22 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiActivity className="w-8 h-8 text-cyan-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">
-                {userStats ? userStats.totalBets : 0}
-              </h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats.totalBets}</h3>
               <p className="text-gray-400">Total Bets</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiTrendingUp className="w-8 h-8 text-green-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">
-                {userStats ? userStats.totalWins : 0}
-              </h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats.totalWins}</h3>
               <p className="text-gray-400">Total Wins</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiAlertCircle className="w-8 h-8 text-red-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">
-                {userStats ? userStats.totalLosses : 0}
-              </h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats.totalLosses}</h3>
               <p className="text-gray-400">Total Losses</p>
             </div>
             <div className="bg-gray-800/50 backdrop-blur-sm p-6 rounded-xl border border-cyan-500/20">
               <FiDollarSign className="w-8 h-8 text-purple-400 mb-2" />
-              <h3 className="text-2xl font-bold text-gray-100">
-                {userStats ? userStats.winRate.toFixed(2) : 0}%
-              </h3>
+              <h3 className="text-2xl font-bold text-gray-100">{userStats.winRate.toFixed(2)}%</h3>
               <p className="text-gray-400">Win Rate</p>
             </div>
           </div>
@@ -243,44 +263,33 @@ const Dashboard = () => {
             <table className="min-w-full divide-y divide-gray-700/50">
               <thead className="bg-gray-700/20">
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
-                    Amount
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
-                    Prediction
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
-                    Outcome
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
-                    Result
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">
-                    Date
-                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Amount</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Prediction</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Outcome</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Result</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-cyan-400">Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-700/50">
-                {betHistory.map((bet) => (
+                {paginatedBets.map((bet) => (
                   <tr key={bet.id} className="hover:bg-gray-700/10 transition-colors">
-                    <td className="px-6 py-4 text-gray-300">{bet.amount} SOL</td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 md:py-4 text-gray-300">{bet.amount} SOL</td>
+                    <td className="px-6 md:py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400">
                         {bet.betChoice}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 md:py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          bet.outcome === 'Win'
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.outcome === 'Win'
                             ? 'bg-green-500/10 text-green-400'
                             : 'bg-red-500/10 text-red-400'
-                        }`}
+                          }`}
                       >
                         {bet.outcome}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-300">{bet.result} SOL</td>
+                    <td className="px-6 md:py-4 text-gray-300">{bet.result} SOL</td>
                     <td className="px-6 py-4 text-gray-400">
                       <FiClock className="inline-block w-4 h-4 mr-2" />
                       {new Date(bet.timestamp).toLocaleString()}
@@ -289,6 +298,44 @@ const Dashboard = () => {
                 ))}
               </tbody>
             </table>
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-2 py-4">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === 1
+                      ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                      : 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/40 hover:shadow-lg hover:shadow-cyan-500/20'
+                    }`}
+                >
+                  Previous
+                </button>
+                <div className="flex gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === page
+                          ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
+                          : 'bg-gray-700/30 text-gray-300 hover:bg-cyan-600/20 hover:text-cyan-400'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === totalPages
+                      ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
+                      : 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/40 hover:shadow-lg hover:shadow-cyan-500/20'
+                    }`}
+                >
+                  Next
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

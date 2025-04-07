@@ -1,79 +1,91 @@
-// backend/src/routes/bet.js
-const express = require("express");
-const router = express.Router();
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
 
-router.post("/", async (req, res) => {
-  const { wallet, matchId, betChoice, amount, outcome, result } = req.body;
-  if (!wallet || !matchId || !betChoice || !amount || !outcome) {
-    return res.status(400).json({ error: "Missing required bet fields" });
+const router = express.Router();
+
+// — GET /api/bets?wallet=<wallet>
+router.get('/', async (req, res) => {
+  const prisma = new PrismaClient();
+  const { wallet } = req.query;
+  console.log('GET /api/bets?wallet=', wallet);
+
+  if (!wallet) {
+    await prisma.$disconnect();
+    return res.status(400).json({ error: 'Wallet is required' });
   }
+
   try {
-    // Find the user by wallet
     const user = await prisma.user.findUnique({ where: { wallet } });
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      await prisma.$disconnect();
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Check if the match exists; if not, create it.
-    let match = await prisma.match.findUnique({
-      where: { id: parseInt(matchId) },
+    const bets = await prisma.bet.findMany({
+      where: { userId: user.id },
+      orderBy: { timestamp: 'desc' },
     });
-    if (!match) {
-      match = await prisma.match.create({
-        data: {
-          id: parseInt(matchId),
-          title: `Match ${matchId}`,
-          description: "Auto-created match",
-          startTime: new Date(),
-          status: "upcoming",
-        },
-      });
+
+    return res.json({ bets });
+  } catch (err) {
+    console.error('Error fetching bet history:', err);
+    return res.status(500).json({ error: err.message });
+  } finally {
+    await prisma.$disconnect();
+  }
+});
+
+// — POST /api/bets
+router.post('/', async (req, res) => {
+  const prisma = new PrismaClient();
+  const {
+    wallet,
+    matchId,
+    betChoice,
+    amount,
+    outcome,
+    result
+  } = req.body;
+
+  console.log('POST /api/bets body:', req.body);
+
+  try {
+    const user = await prisma.user.findUnique({ where: { wallet } });
+    if (!user) {
+      await prisma.$disconnect();
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // Create the new bet record
-    const newBet = await prisma.bet.create({
+    const parsedAmount = parseFloat(amount);
+    const parsedResult = parseFloat(result);
+
+    const bet = await prisma.bet.create({
       data: {
-        userId: user.id,
-        matchId: match.id,
+        userId:     user.id,
+        matchId:    parseInt(matchId, 10),
         betChoice,
-        amount: parseFloat(amount),
+        amount:     parsedAmount,
         outcome,
-        result: parseFloat(result),
+        result:     parsedResult,
+        status:     'PENDING',
+        timestamp:  new Date(),
       },
     });
 
-    // If the bet outcome is a win, update the user's balance by adding the winnings.
-    if (outcome === "Win") {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { balance: { increment: parseFloat(result) } },
-      });
-    }
-
-    res.status(201).json(newBet);
-  } catch (error) {
-    console.error("Error creating bet:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.get("/", async (req, res) => {
-  const { wallet } = req.query;
-  if (!wallet) return res.status(400).json({ error: "Wallet is required" });
-  try {
-    const user = await prisma.user.findUnique({ where: { wallet } });
-    if (!user) return res.status(404).json({ error: "User not found" });
-    const bets = await prisma.bet.findMany({
-      where: { userId: user.id },
-      orderBy: { timestamp: "desc" },
+    // Update balance immediately
+    let newBalance = user.balance + (outcome === 'Win' ? parsedResult : -parsedAmount);
+    await prisma.user.update({
+      where: { id: user.id },
+      data:  { balance: newBalance },
     });
-    res.json({ bets });
-  } catch (error) {
-    console.error("Error fetching bet history:", error);
-    res.status(500).json({ error: "Internal server error" });
+
+    return res.status(201).json(bet);
+  } catch (err) {
+    console.error('Error creating bet:', err);
+    return res.status(500).json({ error: err.message });
+  } finally {
+    await prisma.$disconnect();
   }
 });
 
-module.exports = router;
+export default router;

@@ -12,20 +12,19 @@ model User {
   wallet     String       @unique
   username   String?
   avatarUrl  String?
-  balance    Float        @default(0) // This holds the real balance
+  balance    Float        @default(0)
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   bets       Bet[]
   withdrawals Withdrawal[]
 }
 
-
 model Match {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
   startTime   DateTime
-  status      String   // e.g., "upcoming", "live", "completed"
+  status      String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   bets        Bet[]
@@ -35,15 +34,14 @@ model Bet {
   id         Int      @id @default(autoincrement())
   userId     Int
   matchId    Int
-  betChoice  String   // e.g., "even" or "odd"
+  betChoice  String
   amount     Float
-  status     String   @default("PENDING") // PENDING, WON, LOST
-  outcome    String?  // Set after resolution
-  result     Float?   // Winnings or 0, set after resolution
-  multiplier Float?   // Optional multiplier
+  status     String   @default("PENDING")
+  outcome    String?
+  result     Float?
+  multiplier Float?
   timestamp  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-
   user       User     @relation(fields: [userId], references: [id])
   match      Match    @relation(fields: [matchId], references: [id])
 }
@@ -52,10 +50,9 @@ model Withdrawal {
   id        Int      @id @default(autoincrement())
   userId    Int
   amount    Float
-  currency  String   // e.g., "SOL", "USDC"
-  status    String   @default("pending") // pending, completed, failed
+  currency  String
+  status    String   @default("pending")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   user      User     @relation(fields: [userId], references: [id])
 }

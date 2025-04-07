@@ -1,8 +1,7 @@
 // backend/src/routes/withdrawal.js
-const express = require('express');
+import express from "express";
 const router = express.Router();
-const { createWithdrawal } = require('../controllers/withdrawalController');
+import { createWithdrawal } from "../controllers/withdrawalController.js";
 
 router.post('/', createWithdrawal);
-
-module.exports = router;
+export default router;

@@ -1,8 +1,7 @@
-// backend/src/routes/user.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const userController = require('../controllers/authController');
+import { upsertUser } from '../controllers/authController.js';
 
-router.post('/', userController.upsertUser);
+router.post('/', upsertUser);
 
-module.exports = router;
+export default router;

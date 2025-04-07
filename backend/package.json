@@ -4,16 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-  "start": "node src/index.js",
-  "dev": "nodemon src/index.js"
-},
-"prisma": {
-  "seed": "node prisma/seed.js"
-},
+    "dev": "nodemon --watch 'src/**/*' --ext js,mjs src/index.js",
+    "start": "node src/index.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "dependencies": {
     "@prisma/client": "^6.5.0",
     "cors": "^2.8.5",

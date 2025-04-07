@@ -1,8 +1,7 @@
-// backend/src/controllers/userController.js
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-exports.upsertUser = async (req, res) => {
+export const upsertUser = async (req, res) => {
   const { wallet, username, avatarUrl } = req.body;
   if (!wallet) {
     return res.status(400).json({ error: 'Wallet public key is required' });
@@ -10,8 +9,8 @@ exports.upsertUser = async (req, res) => {
   try {
     const user = await prisma.user.upsert({
       where: { wallet },
-      update: { username, avatarUrl }, // Do not update balance if user already exists.
-      create: { wallet, username, avatarUrl, balance: 10.5 }, // Set starting balance here.
+      update: { username, avatarUrl },
+      create: { wallet, username, avatarUrl, balance: 10.5 },
     });
     res.json(user);
   } catch (error) {
@@ -19,4 +18,3 @@ exports.upsertUser = async (req, res) => {
     res.status(500).json({ error: 'Error upserting user' });
   }
 };
-

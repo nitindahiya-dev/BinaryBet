@@ -17,13 +17,8 @@ binarybet/
 │   │       ├── authController.js # Logic for handling authentication
 │   │       └── matchController.js # Logic for handling match
 │   │       └── betController.js # Logic for bet processing
-├── binarybet/                     # Solana smart contract (Anchor project)                
-│       ├── Cargo.toml            # Rust project configuration for the smart contract
-│       ├── Anchor.toml 
-        ├── programs/                     # Solana smart contract (Anchor project)
-│           └── binarybet/           # Anchor configuration file (set up for upgradeability)
-│               └── src/
-│               └── lib.rs            # Main smart contract code (contains betting logic)
+│   │       └── userController.js # Logic for bet processing
+│   │       └── withdrawalController.js # Logic for bet processing
 ├── frontend/                     # Next.js frontend project
 │   ├── package.json              # Node.js dependencies for frontend
 │   ├── next.config.js            # Next.js configuration

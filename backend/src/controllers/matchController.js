@@ -1,12 +1,13 @@
 // backend/src/controllers/matchController.js
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
-exports.getMatches = async (req, res) => {
+export const getMatches = async (req, res) => {
   try {
     const matches = await prisma.match.findMany();
-    res.status(200).json(matches);
+    res.json({ matches });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error fetching matches:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };

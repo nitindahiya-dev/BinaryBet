@@ -65,6 +65,7 @@ const Betting = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [errorPopup, setErrorPopup] = useState(''); // For error popup
+  const [isConfirmingBet, setIsConfirmingBet] = useState(false); // New state for disabling modal
 
   const generateNumber = () => Math.floor(Math.random() * 10) + 1;
 
@@ -85,22 +86,23 @@ const Betting = () => {
   };
 
   const confirmBet = async () => {
+    setIsConfirmingBet(true); // Disable the modal
     try {
       if (!publicKey || !signTransaction) throw new Error('Wallet not connected');
-      
+
       // Generate outcome before payment
       const newNumber = generateNumber();
       const isEven = newNumber % 2 === 0;
       const won = (betChoice === 'even' && isEven) || (betChoice === 'odd' && !isEven);
       const winnings = won ? (parseFloat(betAmount) * 1.95).toFixed(6) : 0;
-      
+
       setIsProcessingPayment(true);
       const walletObj = { publicKey, signTransaction };
       // Send SOL payment from user's wallet to bet pool
       const txSignature = await sendBetPayment(betAmount, walletObj, connection);
       console.log('Payment transaction signature:', txSignature);
       setIsProcessingPayment(false);
-      
+
       // Record bet data on backend
       const walletStr = publicKey.toString();
       const matchId = selectedMatch.id;
@@ -124,7 +126,7 @@ const Betting = () => {
       );
       const savedBet = await response.json();
       console.log('Bet saved:', savedBet);
-      
+
       // Show the result modal with outcome
       setCurrentNumber(newNumber);
       setIsWin(won);
@@ -132,12 +134,13 @@ const Betting = () => {
       setShowResultModal(true);
     } catch (error) {
       console.error('Error saving bet:', error);
-      // Instead of alert(), set an error popup message
       if (error.message.includes('expired') || error.message.includes('block height')) {
-        setErrorPopup("Payment expired. Please try again.");
+        setErrorPopup('Payment expired. Please try again.');
       } else {
-        setErrorPopup("Payment unsuccessful. Please try again.");
+        setErrorPopup('Payment unsuccessful. Please try again.');
       }
+    } finally {
+      setIsConfirmingBet(false); // Re-enable the modal
     }
   };
 
@@ -171,53 +174,76 @@ const Betting = () => {
                 </h1>
                 <div className="absolute inset-x-0 -bottom-2 mx-auto h-px w-3/4 bg-gradient-to-r from-cyan-400/0 via-cyan-400/40 to-cyan-400/0" />
               </div>
-              {/* Match Selection */}
-              <div className="relative group mt-8">
-                <label className="block text-sm font-medium text-cyan-300 mb-2 text-left">
-                  Select Match Event
-                  <span className="ml-2 text-xs text-gray-400">(Live updates every 30s)</span>
-                </label>
-                <div className="relative rounded-lg transition-all duration-300 group-hover:border-cyan-400/50">
-                  <select
-                    value={selectedMatch?.id || ''}
-                    onChange={(e) =>
-                      setSelectedMatch(mockMatches.find(m => m.id === parseInt(e.target.value)))
-                    }
-                    className="w-full pl-4 pr-10 py-3.5 bg-gray-800/60 backdrop-blur-sm rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 text-gray-200 appearance-none transition-all"
-                  >
-                    <option value="" className="text-gray-400">Choose a match to predict...</option>
-                    {mockMatches.map(match => (
-                      <option
-                        key={match.id}
-                        value={match.id}
-                        className={match.status === 'live' ? 'text-green-400' : 'text-purple-300'}
-                      >
-                        {match.status.toUpperCase()} MATCH •{' '}
-                        {new Date(match.startTime).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          timeZoneName: 'short'
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                    <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-                {/* Live Status Indicator */}
-                {selectedMatch?.status === 'live' && (
-                  <div className="absolute right-4 top-[52px] flex items-center">
-                    <span className="relative flex h-3 w-3">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                    </span>
-                    <span className="ml-2 text-sm text-green-400 font-medium">LIVE NOW</span>
-                  </div>
-                )}
-              </div>
+             {/* Match Selection */}
+<div className="relative group mt-6 sm:mt-8">
+  <label className="block text-sm sm:text-base font-medium text-cyan-300 mb-2 text-left">
+    <span className="inline-block mr-2">Select Match Event</span>
+    <span className="text-xs sm:text-sm text-gray-400">(Live updates every 30s)</span>
+  </label>
+  
+  <div className="relative rounded-lg transition-all duration-300 group-hover:border-cyan-400/50">
+    <select
+      value={selectedMatch?.id || ''}
+      onChange={(e) =>
+        setSelectedMatch(mockMatches.find((m) => m.id === parseInt(e.target.value)))
+      }
+      className="w-full pl-4 pr-10 py-3 sm:py-3.5 text-sm sm:text-base bg-gray-800/60 backdrop-blur-sm rounded-lg border-2 border-cyan-500/30 focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20 text-gray-200 appearance-none transition-all"
+    >
+      <option value="" className="text-gray-400">
+        Choose a match to predict...
+      </option>
+      {mockMatches.map((match) => (
+        <option
+          key={match.id}
+          value={match.id}
+          className={`text-sm sm:text-base ${
+            match.status === 'live' ? 'text-green-400' : 'text-purple-300'
+          }`}
+        >
+          {match.status.toUpperCase()} •{' '}
+          {new Date(match.startTime).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short',
+          })}
+        </option>
+      ))}
+    </select>
+    
+    {/* Chevron Icon */}
+    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+      <svg
+        className="w-5 h-5 text-cyan-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2"
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    </div>
+  </div>
+
+  {/* Live Status Indicator - Stacked on mobile, inline on desktop */}
+  {selectedMatch?.status === 'live' && (
+    <div className="sm:absolute sm:right-4 sm:top-[52px] mt-2 sm:mt-0 flex items-center justify-end sm:justify-start">
+      <span className="relative flex h-3 w-3">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+      </span>
+      <span className="ml-2 text-sm text-green-400 font-medium hidden sm:inline-block">
+        LIVE NOW
+      </span>
+      <span className="ml-2 text-sm text-green-400 font-medium sm:hidden">
+        LIVE
+      </span>
+    </div>
+  )}
+</div>
             </div>
             {/* Prediction Interface */}
             {selectedMatch && (
@@ -268,9 +294,7 @@ const Betting = () => {
                 )}
                 {/* Action Buttons */}
                 {errorMessage && (
-                  <div className="mt-4 text-center text-red-400 text-sm">
-                    {errorMessage}
-                  </div>
+                  <div className="mt-4 text-center text-red-400 text-sm">{errorMessage}</div>
                 )}
                 <div className="mt-6 space-y-3">
                   {betChoice && (
@@ -297,12 +321,19 @@ const Betting = () => {
           {/* Confirmation Modal */}
           {showConfirmModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className="bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border border-cyan-500/30">
+              <div
+                className={`bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border border-cyan-500/30 ${
+                  isConfirmingBet ? 'opacity-50 pointer-events-none' : ''
+                }`}
+              >
                 <div className="text-center">
                   <h2 className="text-xl font-bold mb-4 text-cyan-400">Confirm Bet</h2>
                   <div className="space-y-2 mb-6">
                     <p className="text-gray-300">
-                      Match: <span className="text-cyan-400">{selectedMatch?.status} #{selectedMatch?.id}</span>
+                      Match:{' '}
+                      <span className="text-cyan-400">
+                        {selectedMatch?.status} #{selectedMatch?.id}
+                      </span>
                     </p>
                     <p className="text-gray-300">
                       Prediction: <span className="font-semibold">{betChoice}</span>
@@ -311,20 +342,26 @@ const Betting = () => {
                       Amount: <span className="font-semibold">{betAmount} SOL</span>
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setShowConfirmModal(false)}
-                      className="p-2 bg-gray-700/30 hover:bg-gray-700/50 rounded-lg text-gray-300 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={confirmBet}
-                      className="p-2 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-colors"
-                    >
-                      Confirm Bet
-                    </button>
-                  </div>
+                  {isConfirmingBet ? (
+                    <div className="text-gray-300 mb-6">Processing...</div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setShowConfirmModal(false)}
+                        className="p-2 bg-gray-700/30 hover:bg-gray-700/50 rounded-lg text-gray-300 transition-colors"
+                        disabled={isConfirmingBet}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={confirmBet}
+                        className="p-2 bg-cyan-500/10 hover:bg-cyan-500/20 rounded-lg text-cyan-400 transition-colors"
+                        disabled={isConfirmingBet}
+                      >
+                        Confirm Bet
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -332,20 +369,33 @@ const Betting = () => {
           {/* Result Modal */}
           {showResultModal && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-              <div className={`bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border ${isWin ? 'border-green-500/30' : 'border-red-500/30'}`}>
+              <div
+                className={`bg-gray-800/90 backdrop-blur-sm rounded-2xl p-6 w-full max-w-md border ${
+                  isWin ? 'border-green-500/30' : 'border-red-500/30'
+                }`}
+              >
                 <div className="text-center">
-                  <div className={`mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center ${isWin ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                  <div
+                    className={`mx-auto mb-4 w-16 h-16 rounded-full flex items-center justify-center ${
+                      isWin ? 'bg-green-500/10' : 'bg-red-500/10'
+                    }`}
+                  >
                     {isWin ? (
                       <FiCheckCircle className="w-8 h-8 text-green-400" />
                     ) : (
                       <FiXCircle className="w-8 h-8 text-red-400" />
                     )}
                   </div>
-                  <h2 className={`text-2xl font-bold mb-2 ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                  <h2
+                    className={`text-2xl font-bold mb-2 ${isWin ? 'text-green-400' : 'text-red-400'}`}
+                  >
                     {isWin ? 'Victory!' : 'Defeat!'}
                   </h2>
                   <div className="mb-4 text-gray-300">
-                    <p>Resulting Number: <span className="text-cyan-400 font-bold">{currentNumber}</span></p>
+                    <p>
+                      Resulting Number:{' '}
+                      <span className="text-cyan-400 font-bold">{currentNumber}</span>
+                    </p>
                     <p className="mt-2">{resultMessage}</p>
                   </div>
                   <div className="text-sm text-gray-400 mb-4">

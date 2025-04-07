@@ -1,4 +1,4 @@
-# 🚀 Decentralized Sports Betting Platform
+# 🚀 Decentralized Betting Platform [ Contract part Under Construction]
 
 ![Project Screenshot](demo.png)
 
@@ -6,7 +6,6 @@
 
 [![Solana](https://img.shields.io/badge/Solana-3C3C3D?style=for-the-badge&logo=solana&logoColor=white)](https://solana.com/)
 [![Next JS](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
 
 ## 🌟 Features
 
@@ -14,7 +13,6 @@
 - 🔒 **Provably Fair** on-chain verifiable randomness
 - 💰 **Low Fees** (2% platform fee on wins only)
 - 📈 **Real-time Odds** calculation
-- 🌓 **Dark/Light Mode** with smooth transitions
 - 📱 **Mobile-First** responsive design
 - 📊 **Activity Tracking** with transaction history
 

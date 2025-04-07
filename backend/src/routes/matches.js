@@ -1,9 +1,7 @@
 // backend/src/routes/matches.js
-const express = require('express');
+import express from "express";
 const router = express.Router();
-const matchController = require('../controllers/matchController');
+import { getMatches } from '../controllers/matchController.js';
 
-// Define endpoints for fetching matches
-router.get('/', matchController.getMatches);
-
-module.exports = router;
+router.get('/', getMatches);
+export default router; // Changed to ES module export
