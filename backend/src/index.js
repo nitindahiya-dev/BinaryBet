@@ -26,19 +26,25 @@ const PORT = process.env.PORT || 5000;
   }
 })();
 
-// --- CORS Configuration ---
 const allowedOrigins = [
-  process.env.NEXT_PUBLIC_FRONTEND_URL,
-  'http://localhost:3000',
-  'https://binary-bet-iein.vercel.app'
-].filter(Boolean); // Remove any undefined/null values
+  process.env.NEXT_PUBLIC_FRONTEND_URL, // Production frontend, 
+  'http://localhost:3000'
+].filter(Boolean);
 
 app.use(cors({
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Allow non-browser requests with no origin.
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      return callback(new Error('Not allowed by CORS'));
+    }
+    return callback(null, true);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // If using cookies/auth headers
+  credentials: true // Enable if using cookies or auth headers
 }));
+
 
 // Parse JSON bodies
 app.use(bodyParser.json());
