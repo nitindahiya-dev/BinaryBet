@@ -1,3 +1,4 @@
+// next.config.js
 const withTM = require('next-transpile-modules')([
   '@solana/wallet-adapter-base',
   '@solana/wallet-adapter-react',

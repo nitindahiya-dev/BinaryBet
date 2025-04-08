@@ -8,7 +8,6 @@ import {
   FiAlertCircle,
   FiClock,
   FiLogOut,
-  FiRefreshCw,
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
 
@@ -26,6 +25,7 @@ const Dashboard = () => {
 
   const ITEMS_PER_PAGE = 6;
   const totalPages = Math.ceil(betHistory.length / ITEMS_PER_PAGE);
+  // Use the public backend URL from environment variables
   const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
 
   const fetchUserStats = useCallback(async () => {
@@ -47,7 +47,7 @@ const Dashboard = () => {
     } finally {
       setLoadingStats(false);
     }
-  }, [publicKey]);
+  }, [publicKey, BACKEND]);
 
   const fetchBetHistory = useCallback(async () => {
     if (!publicKey) return;
@@ -68,7 +68,7 @@ const Dashboard = () => {
     } finally {
       setLoadingBets(false);
     }
-  }, [publicKey]);
+  }, [publicKey, BACKEND]);
 
   // Initial data fetch
   useEffect(() => {
@@ -283,10 +283,11 @@ const Dashboard = () => {
                     </td>
                     <td className="px-6 md:py-4">
                       <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${bet.outcome === 'Win'
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          bet.outcome === 'Win'
                             ? 'bg-green-500/10 text-green-400'
                             : 'bg-red-500/10 text-red-400'
-                          }`}
+                        }`}
                       >
                         {bet.outcome}
                       </span>
@@ -305,10 +306,11 @@ const Dashboard = () => {
                 <button
                   onClick={() => handlePageChange(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === 1
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentPage === 1
                       ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
                       : 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/40 hover:shadow-lg hover:shadow-cyan-500/20'
-                    }`}
+                  }`}
                 >
                   Previous
                 </button>
@@ -317,10 +319,11 @@ const Dashboard = () => {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === page
+                      className={`w-10 h-10 rounded-full text-sm font-medium transition-all duration-300 ${
+                        currentPage === page
                           ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/30'
                           : 'bg-gray-700/30 text-gray-300 hover:bg-cyan-600/20 hover:text-cyan-400'
-                        }`}
+                      }`}
                     >
                       {page}
                     </button>
@@ -329,10 +332,11 @@ const Dashboard = () => {
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${currentPage === totalPages
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                    currentPage === totalPages
                       ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
                       : 'bg-cyan-600/20 text-cyan-400 hover:bg-cyan-600/40 hover:shadow-lg hover:shadow-cyan-500/20'
-                    }`}
+                  }`}
                 >
                   Next
                 </button>
