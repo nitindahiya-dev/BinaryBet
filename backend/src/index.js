@@ -1,4 +1,3 @@
-// backend/src/index.js
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -27,22 +26,18 @@ const PORT = process.env.PORT || 5000;
 })();
 
 const allowedOrigins = [
-  'https://binary-bettting.vercel.app', // Your deployed frontend URL
-  'http://localhost:3000',              // Your local frontend for testing
+  'https://binary-bettting.vercel.app', 
+  'http://localhost:3000',   
 ];
 
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: '*', // Allow all origins
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
 
+app.options('*', cors()); // Handle preflight requests
 
 // Parse JSON bodies
 app.use(bodyParser.json());
