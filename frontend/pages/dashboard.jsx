@@ -8,6 +8,7 @@ import {
   FiAlertCircle,
   FiClock,
   FiLogOut,
+  FiRefreshCw,
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
 
@@ -69,6 +70,7 @@ const Dashboard = () => {
     }
   }, [publicKey]);
 
+  // Initial data fetch
   useEffect(() => {
     if (publicKey) {
       console.log('Public key available, fetching data...');

@@ -16,7 +16,7 @@ async function resolveBet(betId, matchOutcome) {
   // Determine if the user won
   const userWon = bet.betChoice === matchOutcome;
   if (userWon) {
-    const winnings = bet.amount * 2; // Example: double the bet amount as winnings
+    const winnings = bet.amount * 1.95; // Win 1.95 times the bet amount
     await prisma.user.update({
       where: { id: bet.userId },
       data: { balance: { increment: winnings } },
@@ -30,6 +30,7 @@ async function resolveBet(betId, matchOutcome) {
       },
     });
   } else {
+    // For a loss, we don't update the balance as it was already deducted when the bet was placed
     await prisma.bet.update({
       where: { id: betId },
       data: {

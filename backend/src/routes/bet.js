@@ -72,14 +72,21 @@ router.post('/', async (req, res) => {
       },
     });
 
-    // Update balance immediately
-    let newBalance = user.balance + (outcome === 'Win' ? parsedResult : -parsedAmount);
-    await prisma.user.update({
-      where: { id: user.id },
-      data:  { balance: newBalance },
-    });
+    // Update balance based on the outcome
+    let newBalance = user.balance;
+    if (outcome === 'Win') {
+      // If win, add 1.95 times the bet amount
+      newBalance = user.balance + (parsedAmount * 1.95);
+      await prisma.user.update({
+        where: { id: user.id },
+        data:  { balance: newBalance },
+      });
+    } else if (outcome === 'Loss') {
+      // If lose, don't change the balance
+      newBalance = user.balance;
+    }
 
-    return res.status(201).json(bet);
+    return res.status(201).json({ bet, updatedBalance: newBalance });
   } catch (err) {
     console.error('Error creating bet:', err);
     return res.status(500).json({ error: err.message });

@@ -24,18 +24,18 @@ binarybet/
 │   ├── next.config.js            # Next.js configuration
 │   ├── .env.local             	# Environment variables for the frontend (API endpoints, keys, etc.)
 │   ├── pages/
-│   │   ├── _app.js               # Application wrapper (global providers, layout)
-│   │   ├── index.js              # Landing/Home page
-│   │   ├── terms.js              # Landing/Home page
-│   │   ├── privacy.js              # Landing/Home page
-│   │   ├── responsiblity.js              # Landing/Home page
-│   │   ├── faq.js              # Landing/Home page
-│   │   ├── betting.js            # Betting interface for placing bets
-│   │   └── dashboard.js          # Dashboard to view matches, stats, and withdrawal info
+│   │   ├── _app.jsx               # Application wrapper (global providers, layout)
+│   │   ├── index.jsx              # Landing/Home page
+│   │   ├── terms.jsx              # Landing/Home page
+│   │   ├── privacy.jsx              # Landing/Home page
+│   │   ├── responsiblity.jsx              # Landing/Home page
+│   │   ├── faq.jsx              # Landing/Home page
+│   │   ├── betting.jsx            # Betting interface for placing bets
+│   │   └── dashboard.jsx          # Dashboard to view matches, stats, and withdrawal info
 │   ├── components/               # Reusable UI components
-│   │   ├── Layout.js             # Common layout wrapper (includes Navbar and Footer)
-│   │   ├── Navbar.js             # Navigation bar (includes wallet connection)
-│   │   └── BettingForm.js        # Form component for placing bets
+│   │   ├── Layout.jsx             # Common layout wrapper (includes Navbar and Footer)
+│   │   ├── Navbar.jsx             # Navigation bar (includes wallet connection)
+│   │   └── BettingForm.jsx        # Form component for placing bets
 │   ├── lib/                      # Library files for external integrations
 │   │   ├── solana.js             # Functions for wallet connection & Solana contract interaction
 │   │   └── anchor.js             # (Optional) Additional Anchor integration functions
