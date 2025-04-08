@@ -27,24 +27,17 @@ const PORT = process.env.PORT || 5000;
 })();
 
 // --- CORS Configuration ---
-// Set allowed origins from environment or fallback to localhost.
 const allowedOrigins = [
-  process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000',
-  // You can also add additional domains if needed:
+  process.env.NEXT_PUBLIC_FRONTEND_URL,
+  'http://localhost:3000',
   'https://binary-bet-iein.vercel.app'
-];
+].filter(Boolean); // Remove any undefined/null values
 
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('Not allowed by CORS'));
-    }
-    return callback(null, true);
-  },
-  // If you need to support credentials:
-  // credentials: true,
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true // If using cookies/auth headers
 }));
 
 // Parse JSON bodies
