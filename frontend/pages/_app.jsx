@@ -9,12 +9,12 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
 
-// Ensure the RPC endpoint is a valid URL
+// Validate the RPC endpoint from the environment
 const rpcFromEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;
 const endpoint =
   rpcFromEnv && (rpcFromEnv.startsWith('http://') || rpcFromEnv.startsWith('https://'))
     ? rpcFromEnv
-    : clusterApiUrl('devnet'); // fallback to devnet if missing or misconfigured
+    : clusterApiUrl('devnet'); // Fallback to devnet if missing or misconfigured
 
 function MyApp({ Component, pageProps }) {
   const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
