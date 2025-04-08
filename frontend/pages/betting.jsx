@@ -29,7 +29,7 @@ const waitForConfirmation = async (connection, signature, timeout = 60000) => {
 
 const sendBetPayment = async (amount, wallet, connection) => {
   const lamports = parseFloat(amount) * LAMPORTS_PER_SOL;
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  const { blockhash } = await connection.getLatestBlockhash();
   const transaction = new Transaction({
     recentBlockhash: blockhash,
     feePayer: wallet.publicKey,

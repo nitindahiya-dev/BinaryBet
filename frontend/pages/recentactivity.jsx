@@ -1,3 +1,4 @@
+// frontend/pages/recentActivity.jsx
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { FiDollarSign, FiDownload, FiUpload, FiUserPlus, FiClock } from 'react-icons/fi';
@@ -57,7 +58,7 @@ export default function RecentActivity() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:5000/api/users/${publicKey.toString()}/activities?page=${pageNum}&limit=${LIMIT}`
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/${publicKey.toString()}/activities?page=${pageNum}&limit=${LIMIT}`
       );
       if (!res.ok) throw new Error('Failed to fetch');
       const { activities: newActs, hasMore } = await res.json();
@@ -145,12 +146,10 @@ export default function RecentActivity() {
                 disabled={loading || page === 1}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50 flex items-center gap-2"
               >
-                {loading && page > 1}
                 <span>Previous</span>
               </button>
 
               <div className="flex items-center gap-2">
-                {loading }
                 <span className="text-gray-400">Page {page}</span>
               </div>
 
@@ -160,7 +159,6 @@ export default function RecentActivity() {
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50 flex items-center gap-2"
               >
                 <span>Next</span>
-                {loading }
               </button>
             </div>
           </div>

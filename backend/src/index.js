@@ -1,3 +1,4 @@
+// backend/src/index.js
 import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
@@ -25,9 +26,14 @@ const PORT = process.env.PORT || 5000;
   }
 })();
 
-// Middlewares
-app.use(cors({ origin: 'http://localhost:3000' }));
+// Use CORS middleware – allow requests from your production frontend or fallback to localhost
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'http://localhost:3000';
+app.use(cors({ origin: FRONTEND_URL }));
+
+// Parse JSON bodies
 app.use(bodyParser.json());
+
+// Simple logging middleware
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();

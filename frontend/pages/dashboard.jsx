@@ -36,9 +36,7 @@ const Dashboard = () => {
       const wallet = encodeURIComponent(publicKey.toString());
       console.log('Fetching user stats for wallet:', wallet);
       const res = await fetch(`${BACKEND}/api/users/${wallet}`);
-      console.log('Raw response status:', res.status, 'OK:', res.ok);
       const data = await res.json();
-      console.log('User stats response:', data);
       if (!res.ok) throw new Error(data.error || 'Failed to fetch user details');
       setUserStats(data.stats);
     } catch (err) {
@@ -57,9 +55,7 @@ const Dashboard = () => {
       const wallet = encodeURIComponent(publicKey.toString());
       console.log('Fetching bet history for wallet:', wallet);
       const res = await fetch(`${BACKEND}/api/bets?wallet=${wallet}`);
-      console.log('Raw response status:', res.status, 'OK:', res.ok);
       const data = await res.json();
-      console.log('Bet history response:', data);
       if (!res.ok) throw new Error(data.error || 'Failed to fetch bet history');
       setBetHistory(data.bets || []);
     } catch (err) {
@@ -70,7 +66,6 @@ const Dashboard = () => {
     }
   }, [publicKey, BACKEND]);
 
-  // Initial data fetch
   useEffect(() => {
     if (publicKey) {
       console.log('Public key available, fetching data...');

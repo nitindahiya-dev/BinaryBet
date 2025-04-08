@@ -14,7 +14,7 @@ const rpcFromEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;
 const endpoint =
   rpcFromEnv && (rpcFromEnv.startsWith('http://') || rpcFromEnv.startsWith('https://'))
     ? rpcFromEnv
-    : clusterApiUrl('devnet'); // fallback to devnet if env variable is missing or misconfigured
+    : clusterApiUrl('devnet'); // fallback to devnet if missing or misconfigured
 
 function MyApp({ Component, pageProps }) {
   const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
