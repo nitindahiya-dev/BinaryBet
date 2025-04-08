@@ -1,4 +1,3 @@
-// frontend/pages/recentActivity.jsx
 import { motion } from 'framer-motion';
 import Layout from '../components/Layout';
 import { FiDollarSign, FiDownload, FiUpload, FiUserPlus, FiClock } from 'react-icons/fi';

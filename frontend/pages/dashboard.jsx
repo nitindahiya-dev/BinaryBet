@@ -1,4 +1,3 @@
-// frontend/pages/dashboard.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import {
@@ -209,8 +208,7 @@ const Dashboard = () => {
                 </div>
                 <div className="text-sm text-gray-400 space-y-1">
                   <p>
-                    Available:{' '}
-                    {Math.max(0, userStats.availableBalance).toFixed(2)} SOL
+                    Available: {Math.max(0, userStats.availableBalance).toFixed(2)} SOL
                   </p>
                   <p>Network Fee: 0.001 SOL</p>
                   {withdrawAmount && (

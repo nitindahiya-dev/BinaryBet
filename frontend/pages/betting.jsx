@@ -1,4 +1,3 @@
-// frontend/pages/betting.jsx
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';

@@ -27,22 +27,20 @@ const PORT = process.env.PORT || 5000;
 })();
 
 const allowedOrigins = [
-  process.env.NEXT_PUBLIC_FRONTEND_URL, // Production frontend, 
-  'http://localhost:3000'
-].filter(Boolean);
+  'https://binary-bettting.vercel.app', // Your deployed frontend URL
+  'http://localhost:3000',              // Your local frontend for testing
+];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow non-browser requests with no origin.
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
-      return callback(new Error('Not allowed by CORS'));
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
-    return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true // Enable if using cookies or auth headers
+  credentials: true,
 }));
 
 
