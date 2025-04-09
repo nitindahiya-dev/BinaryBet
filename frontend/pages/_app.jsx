@@ -1,24 +1,36 @@
 // frontend/pages/_app.js
 import '../styles/globals.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
 import { ThemeProvider } from 'next-themes';
 import { ConnectionProvider, WalletProvider } from '@solana/wallet-adapter-react';
 import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { clusterApiUrl } from '@solana/web3.js';
+import { WalletConnectWalletAdapter } from '@solana/wallet-adapter-walletconnect';
+import Logo from "../public/logo.png"; // Ensure this path is correct
 
-// Validate the RPC endpoint from the environment
-const rpcFromEnv = process.env.NEXT_PUBLIC_SOLANA_RPC;
-const endpoint =
-  rpcFromEnv && (rpcFromEnv.startsWith('http://') || rpcFromEnv.startsWith('https://'))
-    ? rpcFromEnv
-    : clusterApiUrl('devnet'); // Fallback to devnet if missing or misconfigured
+const wallets = [
+  new PhantomWalletAdapter(),
+  new SolflareWalletAdapter(),
+  new WalletConnectWalletAdapter({
+    network: 'devnet',
+    options: {
+      relayUrl: 'wss://relay.walletconnect.com',
+      projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID,
+      metadata: {
+        name: 'BinaryBet',
+        description: 'Binary Betting Platform',
+        url: 'https://binary-bettting.vercel.app',
+        icons: [Logo] // Ensure this is an array
+      }
+    }
+  })
+];
+
+const endpoint = process.env.NEXT_PUBLIC_SOLANA_RPC || clusterApiUrl('devnet');
 
 function MyApp({ Component, pageProps }) {
-  const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
-
   return (
     <ThemeProvider attribute="class" defaultTheme="dark">
       <ConnectionProvider endpoint={endpoint}>

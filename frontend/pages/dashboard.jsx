@@ -7,6 +7,7 @@ import {
   FiAlertCircle,
   FiClock,
   FiLogOut,
+  FiTrash2,
 } from 'react-icons/fi';
 import Layout from '../components/Layout';
 
@@ -24,8 +25,8 @@ const Dashboard = () => {
 
   const ITEMS_PER_PAGE = 6;
   const totalPages = Math.ceil(betHistory.length / ITEMS_PER_PAGE);
-  // Use the public backend URL from environment variables
-  const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000';
+  // IMPORTANT: Use ONLY the environment variable. Do not fall back to localhost.
+  const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL;
 
   const fetchUserStats = useCallback(async () => {
     if (!publicKey) return;
@@ -36,7 +37,14 @@ const Dashboard = () => {
       console.log('Fetching user stats for wallet:', wallet);
       const res = await fetch(`${BACKEND}/api/users/${wallet}`);
       const data = await res.json();
+
+      if (res.status === 404) {
+        setError('Profile not found. Please sign up.');
+        window.location.href = '/';
+        return;
+      }
       if (!res.ok) throw new Error(data.error || 'Failed to fetch user details');
+
       setUserStats(data.stats);
     } catch (err) {
       console.error('Error fetching user stats:', err);
@@ -55,7 +63,14 @@ const Dashboard = () => {
       console.log('Fetching bet history for wallet:', wallet);
       const res = await fetch(`${BACKEND}/api/bets?wallet=${wallet}`);
       const data = await res.json();
+
+      if (res.status === 404) {
+        setError('Profile not found. Please sign up.');
+        window.location.href = '/';
+        return;
+      }
       if (!res.ok) throw new Error(data.error || 'Failed to fetch bet history');
+
       setBetHistory(data.bets || []);
     } catch (err) {
       console.error('Error fetching bet history:', err);
@@ -114,6 +129,27 @@ const Dashboard = () => {
       console.error(err);
       setError(err.message);
       setNotification('');
+    }
+  };
+
+  // New: Function to delete user profile
+  const handleDeleteProfile = async () => {
+    if (!publicKey) return;
+    if (!window.confirm('Are you sure you want to delete your profile? This action cannot be undone.')) return;
+    try {
+      const wallet = encodeURIComponent(publicKey.toString());
+      const res = await fetch(`${BACKEND}/api/users/${wallet}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete profile');
+      setNotification('Profile deleted successfully. Redirecting...');
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
+    } catch (err) {
+      console.error('Error deleting profile:', err);
+      setNotification(`Error deleting profile: ${err.message}`);
     }
   };
 
@@ -186,7 +222,7 @@ const Dashboard = () => {
                 </p>
               </div>
             </div>
-            <div className="w-full md:w-auto mt-6 md:mt-0">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
               <form onSubmit={handleWithdrawal} className="flex flex-col gap-4">
                 <div className="flex items-center gap-4">
                   <input
@@ -207,9 +243,7 @@ const Dashboard = () => {
                   </select>
                 </div>
                 <div className="text-sm text-gray-400 space-y-1">
-                  <p>
-                    Available: {Math.max(0, userStats.availableBalance).toFixed(2)} SOL
-                  </p>
+                  <p>Available: {Math.max(0, userStats.availableBalance).toFixed(2)} SOL</p>
                   <p>Network Fee: 0.001 SOL</p>
                   {withdrawAmount && (
                     <p>You'll receive: {(parseFloat(withdrawAmount) - 0.001).toFixed(2)} SOL</p>
@@ -224,6 +258,14 @@ const Dashboard = () => {
                   Withdraw Funds
                 </button>
               </form>
+              {/* Delete Profile Button */}
+              <button
+                onClick={handleDeleteProfile}
+                className="flex items-center md:mt-[115px] justify-center gap-2 px-6 py-3 bg-red-600/30 hover:bg-red-600/40 rounded-lg text-red-400"
+              >
+                <FiTrash2 className="w-5 h-5" />
+                Delete Profile
+              </button>
             </div>
           </div>
         </div>
@@ -275,13 +317,11 @@ const Dashboard = () => {
                       </span>
                     </td>
                     <td className="px-6 md:py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          bet.outcome === 'Win'
-                            ? 'bg-green-500/10 text-green-400'
-                            : 'bg-red-500/10 text-red-400'
-                        }`}
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        bet.outcome === 'Win'
+                          ? 'bg-green-500/10 text-green-400'
+                          : 'bg-red-500/10 text-red-400'
+                      }`}>
                         {bet.outcome}
                       </span>
                     </td>

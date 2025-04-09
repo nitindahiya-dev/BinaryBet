@@ -1,12 +1,14 @@
+// backend/src/routes/user.js
 import express from 'express';
-import { getUserActivities, getUser } from '../controllers/userController.js';
+import { getUser, getUserActivities, deleteUser } from '../controllers/userController.js';
 
 const router = express.Router();
 
-// Recent activity (paged)
+// Existing routes
+router.get('/:wallet', getUser);
 router.get('/:wallet/activities', getUserActivities);
 
-// User + stats
-router.get('/:wallet', getUser);
+// New route for deleting a user
+router.delete('/:wallet', deleteUser);
 
 export default router;

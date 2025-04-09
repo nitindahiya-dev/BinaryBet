@@ -90,3 +90,19 @@ export const getUser = async (req, res) => {
     await prisma.$disconnect();
   }
 };
+
+export const deleteUser = async (req, res) => {
+  const { wallet } = req.params;
+  try {
+    // First, delete related bets and withdrawals to avoid FK constraints.
+    await prisma.bet.deleteMany({ where: { user: { wallet } } });
+    await prisma.withdrawal.deleteMany({ where: { user: { wallet } } });
+    const deletedUser = await prisma.user.delete({ where: { wallet } });
+    return res.json({ message: 'Profile deleted successfully', user: deletedUser });
+  } catch (err) {
+    console.error('Error deleting user:', err);
+    return res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    await prisma.$disconnect();
+  }
+};

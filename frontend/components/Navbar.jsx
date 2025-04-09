@@ -1,5 +1,6 @@
+// frontend/components/Navbar.js
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { ToastContainer, toast } from 'react-toastify';
@@ -11,17 +12,77 @@ export default function Navbar() {
     const [isSticky, setIsSticky] = useState(false);
     const { connected, disconnect, publicKey, wallet } = useWallet();
     const { setVisible: setModalVisible } = useWalletModal();
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true); // Fix for SSR
+    }, []);
+
+    const isMobile = useCallback(() => {
+        return isClient && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }, [isClient]);
 
     const handleConnect = async () => {
+        if (!isClient) return;
+
+        if (isMobile()) {
+            try {
+                // Try WalletConnect first
+                if (wallet?.adapter.name === 'WalletConnect') {
+                    await wallet.connect();
+                    return;
+                }
+
+                // Mobile deep links
+                const dappUrl = encodeURIComponent(window.location.href);
+                const phantomLink = `phantom://ul/browse/${dappUrl}`;
+                const solflareLink = `solflare://browse?url=${dappUrl}`;
+
+                toast.info(
+                    <div className="text-sm">
+                        <p className="mb-2">🔒 Connect using:</p>
+                        <button
+                            onClick={() => window.location.href = phantomLink}
+                            className="text-cyan-400 underline block w-full text-left"
+                        >
+                            Open in Phantom
+                        </button>
+                        <button
+                            onClick={() => window.location.href = solflareLink}
+                            className="text-cyan-400 underline block mt-1 w-full text-left"
+                        >
+                            Open in Solflare
+                        </button>
+                        <button
+                            onClick={() => setModalVisible(true)}
+                            className="text-cyan-400 underline block mt-1 w-full text-left"
+                        >
+                            Use WalletConnect QR
+                        </button>
+                    </div>,
+                    { autoClose: false }
+                );
+                return;
+
+            } catch (error) {
+                toast.error('Failed to connect. Open in wallet browser.');
+            }
+        }
+
+        // Desktop connection logic
         if (!wallet) {
-            // No wallet selected, open the modal
             setModalVisible(true);
         } else {
             if (!connected) {
                 try {
+                    if (wallet.adapter.readyState === 'NotDetected') {
+                        toast.error('Please install the wallet extension first.');
+                        return;
+                    }
                     await wallet.connect();
                 } catch (error) {
                     console.error("Connection error:", error);
+                    toast.error(`Connection failed: ${error.message}`);
                 }
             } else {
                 await disconnect();
@@ -34,16 +95,10 @@ export default function Navbar() {
         return `${key.toString().slice(0, 5)}...${key.toString().slice(-5)}`;
     };
 
-    // Handle scroll event to set sticky state
     useEffect(() => {
-        const handleScroll = () => {
-            setIsSticky(window.scrollY > 50); // Adjust the value as needed
-        };
-
+        const handleScroll = () => setIsSticky(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-        };
+        return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     return (
@@ -145,7 +200,7 @@ export default function Navbar() {
                     </motion.div>
                 )}
             </motion.nav>
-            <ToastContainer />
+            <ToastContainer position="bottom-right" theme="dark" />
         </>
     );
 }
